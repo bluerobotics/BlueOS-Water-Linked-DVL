@@ -31,4 +31,5 @@ def post(url, data):
     except Exception as error:
         print("Error in request: {0}: {1}".format(url, error))
         print(error.read())
+        print(data)
         return None
