@@ -4,7 +4,7 @@ Driver for the Waterlinked DVL A-50
 """
 
 from flask import Flask
-from dvl import DvlDriver
+from dvl import DvlDriver, MessageType
 import json
 from flask import Flask, request, send_from_directory
 
@@ -64,6 +64,9 @@ class API:
             return self.dvl.set_use_as_rangefinder(enabled == "true")
         return False
 
+    def set_message_type(self, messagetype: str):
+        self.dvl.set_should_send(messagetype)
+
 
 if __name__ == '__main__':
     dvl = DvlDriver()
@@ -84,6 +87,10 @@ if __name__ == '__main__':
     @app.route('/orientation/<int:orientation>')
     def set_orientation(orientation: int):
         return str(api.set_orientation(orientation))
+
+    @app.route('/message_type/<messagetype>')
+    def set_message_type(messagetype: str):
+        return str(api.set_message_type(messagetype))
 
     @app.route('/hostname/<hostname>')
     def set_hostname(hostname):

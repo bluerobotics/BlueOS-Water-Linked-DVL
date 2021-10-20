@@ -22,6 +22,9 @@ class MessageType(str, Enum):
     POSITION_ESTIMATE = "POSITION_ESTIMATE"
     SPEED_ESTIMATE = "SPEED_ESTIMATE"
 
+    def contains(value):
+        return value in set(item.value for item in MessageType)
+
 
 class DvlDriver (threading.Thread):
     """
@@ -165,6 +168,12 @@ class DvlDriver (threading.Thread):
             self.save_settings()
             return True
         return False
+
+    def set_should_send(self, should_send):
+        if not MessageType.contains(should_send):
+            raise Exception(f"bad messagetype: {should_send}")
+        self.should_send = should_send
+        self.save_settings()
 
     def set_gps_origin(self, lat, lon):
         """

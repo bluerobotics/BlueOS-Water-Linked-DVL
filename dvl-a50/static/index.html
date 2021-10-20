@@ -41,6 +41,10 @@
 				// Set Radio toggles to backend state
 				$("#orientation1").prop('checked', data.orientation == 1);
 				$("#orientation2").prop('checked', data.orientation == 2);
+
+				$("#message_position_delta").prop('checked', data.should_send === 'POSITION_DELTA')
+				$("#message_position_estimate").prop('checked', data.should_send === 'POSITION_ESTIMATE')
+				$("#message_speed_estimate").prop('checked', data.should_send === 'SPEED_ESTIMATE')
 				// $("lat").value = data.origin[0]
 				// $("long").value = data.origin[1]
 				// marker.setLatLng(L.latLng(data.origin))
@@ -98,6 +102,14 @@
 			}, 500)
 		}
 
+		/* Sets DVL MessageType */
+		function setDvlMessage(messagetype) {
+			const request = new XMLHttpRequest();
+			request.timeout = 800;
+			request.open('GET', 'message_type/' + messagetype, true);
+			request.send();
+		}
+
 		function setNewOrigin() {
 			const lat = document.getElementById("lat").value
 			const long = document.getElementById("long").value
@@ -133,6 +145,33 @@
 									aria-hidden="true"></i></i></label>
 							<input type="text" class="form-control" id="dvl-ip" value=""
 								oninput="setDvlHostname();"></input>
+						</div>
+					</div>
+
+					<div class="col-md-4">
+						<h4>Message Type</h4>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="messagetypes" id="message_position_delta"
+								onclick="setDvlMessage('POSITION_DELTA');">
+							<label class="form-check-label" for="messagetype">
+								VISION_POSITION_DELTA
+							</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="messagetypes" id="message_position_estimate"
+								onclick="setDvlMessage('POSITION_ESTIMATE');">
+							<label class="form-check-label" for="messagetype">
+								VISION_POSITION_ESTIMATE (dvl built-in dead reckoning)
+							</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="messagetypes" id="message_speed_estimate"
+								onclick="setDvlMessage('SPEED_ESTIMATE');">
+							<label class="form-check-label" for="messagetype">
+								VISION_SPEED_ESTIMATE
+							</label>
+						</div>
+
 						</div>
 					</div>
 

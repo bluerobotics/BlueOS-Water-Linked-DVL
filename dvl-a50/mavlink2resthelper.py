@@ -262,9 +262,9 @@ class Mavlink2RestHelper:
         post(MAVLINK2REST_URL + '/mavlink', data=data)
 
     def send_vision_speed_estimate(self, speed_estimates):
-        "Sends message VISION_POSITION_DELTA to flight controller"
+        "Sends message VISION_SPEED_ESTIMATE to flight controller"
         data = self.vision_speed_estimate_template.format(
-                                  us=(time.time()-self.start_time)*1e6,
+                                  us=int((time.time()-self.start_time)*1e6),
                                   vx=speed_estimates[0],
                                   vy=speed_estimates[1],
                                   vz=speed_estimates[2])
@@ -272,7 +272,7 @@ class Mavlink2RestHelper:
         post(MAVLINK2REST_URL + '/mavlink', data=data)
 
     def send_vision_position_estimate(self, timestamp, position_estimates, attitude_estimates=[0.0, 0.0, 0.0]):
-        "Sends message VISION_POSITION_DELTA to flight controller"
+        "Sends message VISION_POSITION_ESTIMATE to flight controller"
         data = self.vision_position_estimate_template.format(
                                   us=int(timestamp*1e3),
                                   roll=radians(attitude_estimates[0]),
