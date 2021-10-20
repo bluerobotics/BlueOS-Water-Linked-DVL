@@ -36,7 +36,7 @@ class DvlDriver (threading.Thread):
     last_attitude = (0, 0, 0)  # used for calculating the attitude delta
     current_orientation = DVL_DOWN
     enabled = True
-    rangefinder = False
+    rangefinder = True
     hostname = HOSTNAME
     timeout = 3 # tcp timeout in seconds
     origin = [0, 0]
