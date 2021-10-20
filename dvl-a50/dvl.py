@@ -10,10 +10,17 @@ import socket
 from select import select
 import math
 import os
+from enum import Enum
 
 HOSTNAME = "192.168.2.117"
 DVL_DOWN = 1
 DVL_FORWARD = 2
+
+
+class MessageType(str, Enum):
+    POSITION_DELTA = "POSITION_DELTA"
+    POSITION_ESTIMATE = "POSITION_ESTIMATE"
+    SPEED_ESTIMATE = "SPEED_ESTIMATE"
 
 
 class DvlDriver (threading.Thread):
@@ -36,6 +43,8 @@ class DvlDriver (threading.Thread):
     settings_path = os.path.join(os.path.expanduser(
         "~"), ".config", "dvl", "settings.json")
 
+    should_send = MessageType.POSITION_DELTA
+
     def __init__(self, orientation=DVL_DOWN):
         threading.Thread.__init__(self)
         self.current_orientation = orientation
@@ -52,6 +61,7 @@ class DvlDriver (threading.Thread):
                 self.hostname = data["hostname"]
                 self.origin = data["origin"]
                 self.rangefinder = data["rangefinder"]
+                self.should_send = data["should_send"]
                 print("Loaded settings: ", data)
         except FileNotFoundError:
             print("Settings file not found, using default.")
@@ -81,7 +91,8 @@ class DvlDriver (threading.Thread):
                 "orientation": self.current_orientation,
                 "hostname": self.hostname,
                 "origin": self.origin,
-                "rangefinder": self.rangefinder
+                "rangefinder": self.rangefinder,
+                "should_send": self.should_send,
             }))
 
     def get_status(self) -> dict:
@@ -94,7 +105,8 @@ class DvlDriver (threading.Thread):
             "orientation": self.current_orientation,
             "hostname": self.hostname,
             "origin": self.origin,
-            "rangefinder": self.rangefinder
+            "rangefinder": self.rangefinder,
+            "should_send": self.should_send,
         }
 
     @property
@@ -263,6 +275,55 @@ class DvlDriver (threading.Thread):
         self.last_attitude = current_attitude
         return angles
 
+    def handle_velocity(self, data):
+        # TODO: test if this is used by ArduSub or could be [0, 0, 0]
+        # extract velocity data from the DVL JSON
+
+        vx, vy, vz, alt, valid, fom = data["vx"], data["vy"], data["vz"], data["altitude"], data["velocity_valid"], data["fom"]
+        dt = data["time"] / 1000
+        dx = dt*vx
+        dy = dt*vy
+        dz = dt*vz
+
+        # fom is the standard deviation. scaling it to a confidence from 0-100%
+        # 0 is a very good measurement, 0.4 is considered a inaccurate measurement
+        _fom_max = 0.4
+        confidence = 100 * (1-min(_fom_max, fom)/_fom_max) if valid else 0
+        # confidence = 100 if valid else 0
+
+        # feeding back the angles seem to aggravate the gyro drift issue
+        # angles = self.update_attitude()
+        angles = [0, 0, 0]
+
+        if self.should_send == MessageType.POSITION_DELTA:
+            if self.current_orientation == DVL_DOWN:
+                self.mav.send_vision([dx, dy, dz],
+                                        angles,
+                                        dt=data["time"]*1e3,
+                                        confidence=confidence)
+            elif self.current_orientation == DVL_FORWARD:
+                self.mav.send_vision([dz, dy, -dx],
+                                        angles,
+                                        dt=data["time"]*1e3,
+                                        confidence=confidence)
+        elif self.should_send == MessageType.SPEED_ESTIMATE:
+            if self.current_orientation == DVL_DOWN:
+                self.mav.send_vision_speed_estimate([vx, vy, vz])
+            elif self.current_orientation == DVL_FORWARD:
+                self.mav.send_vision_speed_estimate([vz, vy, -vx])
+
+        if self.rangefinder:
+            self.mav.send_rangefinder(alt)
+
+    def handle_position_local(self, data):
+        if self.should_send == MessageType.POSITION_ESTIMATE:
+            x, y, z, roll, pitch, yaw = data["x"], data["y"], data["z"], data["roll"], data["pitch"], data["yaw"]
+            timestamp = data["ts"]
+            self.mav.send_vision_position_estimate(
+                    timestamp,
+                    [x, y, z],
+                    [roll, pitch, yaw])
+
     def run(self):
         """
         Runs the main routing
@@ -325,38 +386,14 @@ class DvlDriver (threading.Thread):
 
             self.status = "Running"
 
-            # TODO: test if this is used by ArduSub or could be [0, 0, 0]
-            # extract velocity data from the DVL JSON
-            try:
-                vx, vy, vz, alt, valid, fom = data["vx"], data["vy"], data["vz"], data["altitude"], data["velocity_valid"], data["fom"]
-                dt = data["time"] / 1000
-                dx = dt*vx
-                dy = dt*vy
-                dz = dt*vz
-
-                # fom is the standard deviation. scaling it to a confidence from 0-100%
-                # 0 is a very good measurement, 0.4 is considered a inaccurate measurement
-                _fom_max = 0.4
-                confidence = 100 * (1-min(_fom_max, fom)/_fom_max) if valid else 0
-                # confidence = 100 if valid else 0
-
-                # feeding back the angles seem to aggravate the gyro drift issue
-                # angles = self.update_attitude()
-                angles = [0, 0, 0]
-            except Exception as error:
-                print("Error fetching data for DVL:", error)
+            if "type" not in data:
                 continue
 
-            if self.current_orientation == DVL_DOWN:
-                self.mav.send_vision([dx, dy, dz],
-                                     angles,
-                                     dt=data["time"]*1e3,
-                                     confidence=confidence)
-            elif self.current_orientation == DVL_FORWARD:
-                self.mav.send_vision([dz, dy, -dx],
-                                     angles,
-                                     dt=data["time"]*1e3,
-                                     confidence=confidence)
-            if self.rangefinder:
-                self.mav.send_rangefinder(alt)
+            if data["type"] == "velocity":
+
+                self.handle_velocity(data)
+
+            if data["type"] == "position_local":
+                self.handle_position_local(data)
+
             time.sleep(0.003)
