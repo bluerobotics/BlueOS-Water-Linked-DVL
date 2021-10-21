@@ -304,6 +304,13 @@ class DvlDriver (threading.Thread):
         # angles = self.update_attitude()
         angles = [0, 0, 0]
 
+
+        if self.rangefinder:
+            self.mav.send_rangefinder(alt)
+
+        if not valid:
+            return
+
         if self.should_send == MessageType.POSITION_DELTA:
             if self.current_orientation == DVL_DOWN:
                 self.mav.send_vision([dx, dy, dz],
@@ -320,9 +327,6 @@ class DvlDriver (threading.Thread):
                 self.mav.send_vision_speed_estimate([vx, vy, vz])
             elif self.current_orientation == DVL_FORWARD:
                 self.mav.send_vision_speed_estimate([vz, vy, -vx])
-
-        if self.rangefinder:
-            self.mav.send_rangefinder(alt)
 
     def handle_position_local(self, data):
         if self.should_send == MessageType.POSITION_ESTIMATE:
