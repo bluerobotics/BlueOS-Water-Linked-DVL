@@ -233,8 +233,11 @@ class DvlDriver (threading.Thread):
         self.mav.set_param("EK2_ENABLE", "MAV_PARAM_TYPE_UINT8", 0)
 
         self.mav.set_param("EK3_ENABLE", "MAV_PARAM_TYPE_UINT8", 1)
-        self.mav.set_param("VISO__TYPE", "MAV_PARAM_TYPE_UINT8", 1)
+        self.mav.set_param("VISO_TYPE", "MAV_PARAM_TYPE_UINT8", 1)
         self.mav.set_param("EK3_GPS_TYPE", "MAV_PARAM_TYPE_UINT8", 3)
+        self.mav.set_param("EK3_SRC1_POSXY", "MAV_PARAM_TYPE_UINT8", 6) # EXTNAV
+        self.mav.set_param("EK3_SRC1_VELXY", "MAV_PARAM_TYPE_UINT8", 6) # EXTNAV
+        self.mav.set_param("EK3_SRC1_POSZ", "MAV_PARAM_TYPE_UINT8", 1) # BARO
 
     def setup_connections(self, timeout=300):
         """
