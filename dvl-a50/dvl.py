@@ -4,7 +4,7 @@ Code for integration of Waterlinked DVL A50 with Companion and ArduSub
 import threading
 import time
 from mavlink2resthelper import Mavlink2RestHelper
-from companionhelper import request
+from blueoshelper import request
 import json
 import socket
 from select import select
