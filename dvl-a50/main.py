@@ -100,6 +100,10 @@ if __name__ == '__main__':
     def set_gps_origin(lat, lon):
         return str(api.set_gps_origin(lat, lon))
 
+    @app.route('/register_service')
+    def register_service():
+        return app.send_static_file('service.json')
+
     @app.route('/')
     def root():
         return app.send_static_file('index.html')
