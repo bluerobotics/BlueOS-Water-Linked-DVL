@@ -1,250 +1,269 @@
 <html>
-	<head>
-		<script src="/static/js/jquery.min.js"></script>
-		<title>Waterlinked DVL A-50</title>
-	</head>
-	<!-- These next two will only work with internet, and that is fine. -->
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
-		integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
-		crossorigin="" />
-	<!-- Make sure you put this AFTER Leaflet's CSS -->
-	<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
-		integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
-		crossorigin=""></script>
 
+<head>
+	<title>Waterlinked DVL A-50</title>
+</head>
+<!-- These next two will only work with internet, and that is fine. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+	integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+	crossorigin="" />
+<!-- Make sure you put this AFTER Leaflet's CSS -->
+<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+	integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+	crossorigin=""></script>
+	<script src="/static/js/rotatedmarker.js"></script>
 
-	<link href="/static/css/bootstrap-switch.css" rel="stylesheet">
-	<script src="/static/js/bootstrap-switch.js"></script>
+<head>
+	<link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
 
-	<script>
-		let hostnameTimeout = undefined;
+<style>
+	.v-card {
+		padding: 20px;
+	}
+</style>
 
-		var map;
-		var marker;
+<div id="app">
+	<v-app>
+		<v-main>
+			<v-container>
+				<h1>Waterlinked DVL A-50 Driver</h1>
+				<v-row>
+					<v-col>
+						<v-card height="200">
+							<v-switch v-model="this.enabled" inset :label="`Enable Driver`" @change="setDvlEnabled($event)"></v-switch>
+							<v-form ref="form" @submit.prevent="setDvlHostname()">
+								<v-text-field
+									v-model="newHostname"
+									label="Hostname/IP"
+								></v-text-field>
+							</v-form>
+						</v-card>
+					</v-col>
+					<v-col>
+						<v-card height="200">
+							<h2>Message type:</h2>
+							<v-radio-group v-model="this.messageToSend">
+								<v-radio v-for="msg in messageOptions" :key="msg" :label="`${msg}`" :value="msg" @change="setDvlMessage(msg)">
+								</v-radio>
+							</v-radio-group>
+						</v-card>
+					</v-col>
+					<v-col>
+						<v-card height="200">
+							<h2>Orientation:</h2>
+							<v-radio-group v-model="this.orientation">
+								<v-radio v-for="(item, key) in orientationOptions" :key="item" :label="key" :value="item" @change="setDvlOrientation(item)"></v-radio>
+							</v-radio-group>
+						</v-card>
+					</v-col>
+					<v-col>
+						<v-card height="200">
+							<h2>Rangefinder:</h2>
+							<v-checkbox v-model="this.rangefinder" :label="`Use as MAVLink rangefinder`" @change="setDvlAsRangefinder($event)"></v-checkbox>
+						</v-card>
+					</v-col>
+				</v-row>
+				<v-row>
+					<v-col>
+						<v-card height="600">
+							<h3>Set Current Location</h3>
+							<div id="mapid" style="height: 400px;"></div>
+							<form>
+								<label for="lat">Latitude:</label>
+								<input type="text" id="lat" name="lat" v-model="this.newOrigin[0]">
+								<label for="long">Longitude:</label>
+								<input type="text" id="long" name="long" v-model="this.newOrigin[1]">
+							</form>
+							<v-btn type="button" class="btn btn-primary" @click="setCurrentLocation();">Set Current Location</v-btn>
+						</v-card>
+					</v-col>
+				</v-row>
+				<v-row>
+					<v-col>
+						<v-card height="200">
+							<h4>Status</h4>
+							<div>
+								<textarea readonly style="width:100%;"
+									id="dvl-status"> {{status}} </textarea>
+							</div>
+						</v-card>
+					</v-col>
+				</v-row>
+			</v-container>
+		</v-main>
+	</v-app>
+</div>
 
-		/* Fetchs backend status and updates frontend accordingly */
-		function updateDvlStatus() {
-			const request = new XMLHttpRequest();
-			request.timeout = 800;
-			request.open('GET', '/get_status', true);
+<script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-			request.onload = function () {
-				if (this.status < 200 || this.status >= 400) {
-					return
-				}
-				const data = JSON.parse(this.response)
-				// Fill status field
-				document.getElementById('dvl-status').innerHTML = data.status
-				// Set On/Off toggle to backend state
-				//$("#enable-switch").bootstrapSwitch("state", Boolean(data.enabled));
-				//$("#enable-rangefinder").bootstrapSwitch("state", Boolean(data.rangefinder));
-				// Set Radio toggles to backend state
-				$("#orientation1").prop('checked', data.orientation == 1);
-				$("#orientation2").prop('checked', data.orientation == 2);
-
-				$("#message_position_delta").prop('checked', data.should_send === 'POSITION_DELTA')
-				$("#message_position_estimate").prop('checked', data.should_send === 'POSITION_ESTIMATE')
-				$("#message_speed_estimate").prop('checked', data.should_send === 'SPEED_ESTIMATE')
-				// $("lat").value = data.origin[0]
-				// $("long").value = data.origin[1]
-				// marker.setLatLng(L.latLng(data.origin))
-
-				// Fills IP field and
-				if (document.getElementById('dvl-ip').value == "") {
-					document.getElementById('dvl-ip').value = data.hostname
-				}
-				// hide spinner if appropriate
-				if (data.hostname == document.getElementById('dvl-ip').value) {
-					$(".spinner").hide()
+<script>
+	Vue.config.devtools = true;
+	new Vue({
+		el: '#app',
+		vuetify: new Vuetify(),
+		data() {
+			return {
+				status: "",
+				enabled: null,
+				orientation: null,
+				origin: [0, 0],
+				newOrigin: [0, 0],
+				rangefinder: null,
+				messageToSend: null,
+				hostname: null,
+				rovMarker: undefined,
+				newHostname: null,
+				rovPosition: [],
+				messageOptions: ["POSITION_DELTA", "POSITION_ESTIMATE", "SPEED_ESTIMATE"],
+				orientationOptions: {
+					"Downwards (LED pointing forward)": 1,
+					"Forward (Experimental)": 2,
 				}
 			}
-			request.onerror = function () {
-				document.getElementById('dvl-status').innerHTML = "Unable to talk to DVL service"
-			};
-			request.ontimeout = request.onerror
-			request.send();
-		}
+		},
+		methods: {
+			updateDvlStatus() {
+				axios.get('/get_status', { timeout: 1000 })
+					.then((response) => {
+						// handle success
+						let data = response.data
+						this.status = data.status
+						this.enabled = data.enabled
+						this.orientation = data.orientation
+						this.origin = data.origin
+						if (this.newOrigin === ['0','0']) {
+							this.newOrigin = data.origin
+						}
+						this.rangefinder = data.rangefinder
+						this.messageToSend = data.messageToSend
+					  this.hostname = data.hostname
+						this.messageToSend = data.should_send
+						if (this.newHostname == null) {
+							this.newHostname = data.hostname
+						}
+					})
+					.catch((error) => {
+						this.status = `Unable to talk to DVL service: ${error}`
+						console.log(error);
+					})
+			},
+			updateVehiclePosition() {
+				axios.get(`http://${window.location.hostname}/mavlink2rest/mavlink/vehicles/1/components/1/messages/GLOBAL_POSITION_INT/message`, { timeout: 1000 })
+					.then((response) => {
+						lat = response.data.lat/1e7
+						lon = response.data.lon/1e7
+						if (this.rovMarker === undefined) {
+							var myIcon = L.icon(
+								{
+									iconUrl: '/static/arrow.png',
+									iconSize: [30, 30],
+									iconAnchor: [15, 15],
+									className: 'rovmarker',
+							});
+							this.rovMarker = L.marker([lat, lon], { title: "ROV position", icon: myIcon, rotationAngle: 45})
+							.addTo(map)
+						} else {
+							this.rovPosition = [lat, lon]
+							this.rovMarker.setLatLng(new L.LatLng(lat, lon))
+						}
+					})
+					axios.get(`http://${window.location.hostname}/mavlink2rest/mavlink/vehicles/1/components/1/messages/ATTITUDE/message/yaw`, { timeout: 1000 })
+					.then((response) => {
+						angle = parseFloat(response.data) * 57.2958
+						this.rovMarker.setRotationAngle(angle)
+					})
+			},
+			createMap() {
+				map = L.map('mapid').setView([0, 0], 1);
+				L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+					attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+					maxZoom: 22,
+					maxNativeZoom: 19
+				}).addTo(map);
 
-		/* Toggles driver on/off */
-		function setDvlEnabled(event) {
-			const request = new XMLHttpRequest();
-			request.timeout = 800;
-			request.open('GET', 'enable/' + event.target.checked, true);
-			request.send();
-		}
+				marker = L.marker([33.841456, -118.335212], { title: "New Origin", draggable: true })
+					.addTo(map)
+					.on('dragend', (event) => {
+						this.newOrigin = [event.latlng.lat, event.latlng.lng]
+					});
 
-		/* Toggles driver on/off */
-		function setDvlAsRangefinder(event) {
-			const request = new XMLHttpRequest();
-			request.timeout = 800;
-			request.open('GET', 'use_as_rangefinder/' + event.target.checked, true);
-			request.send();
-		}
-
-		/* Sets dvl orientation (Down/Forward) */
-		function setDvlOrientation(orientation) {
-			const request = new XMLHttpRequest();
-			request.timeout = 800;
-			request.open('GET', 'orientation/' + orientation, true);
-			request.send();
-		}
-
-		/* Sets DVL hostname (usually waterlinked-dvl.local) */
-		function setDvlHostname() {
-			$(".spinner").show()
-			clearTimeout(hostnameTimeout);
-			hostnameInterval = setTimeout(function () {
+				map.on('click', (e) => {
+					newLng = e.latlng.lng
+					while (newLng > 180) {
+						newLng -= 360
+					}
+					while (newLng < -180) {
+						newLng += 360
+					}
+					this.newOrigin = [e.latlng.lat, newLng]
+					marker.setLatLng(e.latlng)
+					map.setView([e.latlng.lat, newLng])
+				});
+			},
+			/* Toggles driver on/off */
+			setDvlEnabled(event) {
 				const request = new XMLHttpRequest();
-				const ip = document.getElementById('dvl-ip').value;
 				request.timeout = 800;
-				request.open('GET', 'hostname/' + ip, true);
+				request.open('GET', 'enable/' + event, true);
 				request.send();
-			}, 500)
+			},
+
+			/* Toggles driver on/off */
+			setDvlAsRangefinder(value) {
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'use_as_rangefinder/' + value, true);
+				request.send();
+			},
+
+			/* Sets dvl orientation (Down/Forward) */
+			setDvlOrientation(orientation) {
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'orientation/' + orientation, true);
+				request.send();
+			},
+
+			/* Sets DVL hostname (usually waterlinked-dvl.local) */
+			setDvlHostname() {
+				const request = new XMLHttpRequest();
+				request.timeout = 2000;
+				request.open('GET', 'hostname/' + this.newHostname, true);
+				request.send();
+
+			},
+
+			/* Sets DVL MessageType */
+			setDvlMessage(msg) {
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'message_type/' + msg, true);
+				request.send();
+			},
+
+			setCurrentLocation() {
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'setcurrentposition/' + this.newOrigin[0] + '/' + this.newOrigin[1], true);
+				request.send();
+			},
+
+		},
+		mounted() {
+			console.log('mounted!')
+			this.createMap()
+			this.updateDvlStatus()
+			setInterval(this.updateDvlStatus, 2000)
+			setInterval(this.updateVehiclePosition, 1000)
 		}
+	})
 
-		/* Sets DVL MessageType */
-		function setDvlMessage(messagetype) {
-			const request = new XMLHttpRequest();
-			request.timeout = 800;
-			request.open('GET', 'message_type/' + messagetype, true);
-			request.send();
-		}
+</script>
 
-		function setNewOrigin() {
-			const lat = document.getElementById("lat").value
-			const long = document.getElementById("long").value
-			const request = new XMLHttpRequest();
-			request.timeout = 800;
-			request.open('GET', 'origin/' + lat + '/' + long, true);
-			request.send();
-		}
-
-		// Update at 1 Hz
-		updateDvlStatus();
-		setInterval(updateDvlStatus, 1000);
-
-	</script>
-<div class="container"></div>
-	<h1>Waterlinked Driver Setup</h1>
-
-	<div class="row">
-		<div class="col-md-12">
-			<div class="panel panel-default">
-				<div class="panel-heading">
-					<h3 class="panel-title">
-						Water Linked <b>DVL</b> Driver </h3>
-				</div>
-				<div class="panel-body">
-					<div class="row"></div>
-					<div id="udpConfig" class="col-md-4">
-						<h4>Driver Enable</h4>
-						<input type="checkbox" id="enable-switch" checked
-						style="display: none;">
-						<div class="form-group" style="margin-top: 10px;">
-							<label>DVL IP Address:<i class="fa fa-spinner spinner" id="dvl-ip-spinner"
-									aria-hidden="true"></i></i></label>
-							<input type="text" class="form-control" id="dvl-ip" value=""
-								oninput="setDvlHostname();"></input>
-						</div>
-					</div>
-
-					<div class="col-md-4">
-						<h4>Message Type</h4>
-						<div class="form-check">
-							<input class="form-check-input" type="radio" name="messagetypes" id="message_position_delta"
-								onclick="setDvlMessage('POSITION_DELTA');">
-							<label class="form-check-label" for="messagetype">
-								VISION_POSITION_DELTA
-							</label>
-						</div>
-						<div class="form-check">
-							<input class="form-check-input" type="radio" name="messagetypes" id="message_position_estimate"
-								onclick="setDvlMessage('POSITION_ESTIMATE');">
-							<label class="form-check-label" for="messagetype">
-								VISION_POSITION_ESTIMATE (dvl built-in dead reckoning)
-							</label>
-						</div>
-						<div class="form-check">
-							<input class="form-check-input" type="radio" name="messagetypes" id="message_speed_estimate"
-								onclick="setDvlMessage('SPEED_ESTIMATE');">
-							<label class="form-check-label" for="messagetype">
-								VISION_SPEED_ESTIMATE
-							</label>
-						</div>
-
-						</div>
-					</div>
-
-					<div class="col-md-4">
-						<h4>Orientation</h4>
-						<div class="form-check">
-							<input class="form-check-input" type="radio" name="exampleRadios" id="orientation1"
-								onclick="setDvlOrientation(1);">
-							<label class="form-check-label" for="orientation1">
-								Down
-							</label>
-						</div>
-						<div class="form-check">
-							<input class="form-check-input" type="radio" name="exampleRadios" id="orientation2"
-								onclick="setDvlOrientation(2);">
-							<label class="form-check-label" for="orientation2">
-								Forward (Experimental)
-							</label>
-						</div>
-					</div>
-					<div class="col-md-4">
-						<h4>Use as rangefinder
-						</h4>
-						<input type="checkbox" id="enable-rangefinder">
-					</div>
-
-
-
-					<div class="col-md-12">
-						<h3>Set Origin</h3>
-						<div id="mapid" style="height: 400px;"></div>
-						<form>
-							<label for="lat">Latitude:</label>
-							<input type="text" id="lat" name="lat" value="33.841456" oninput="plotCircleCoords(true);">
-							<label for="long">Longitude:</label>
-							<input type="text" id="long" name="long" value="-118.335212" oninput="plotCircleCoords(true);">
-						</form>
-						<button type="button" class="btn btn-primary" onclick="setNewOrigin();">Set new Origin</button>
-						<hr>
-						<h4>Status</h4>
-						<div>
-							<textarea readonly style="width:100%;"
-								id="dvl-status"> Internet connection required to use the map view</textarea>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
-	<script>
-		map = L.map('mapid').setView([0, 0], 1);
-		L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-			attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-		}).addTo(map);
-
-		marker = L.marker([33.841456, -118.335212], { title: "New Origin", draggable: true })
-			.addTo(map)
-			.on('dragend', function (event) {
-				document.getElementById("lat").value = event.latlng.lat
-				document.getElementById("long").value = event.latlng.lng
-			});
-
-		map.on('click', function (e) {
-			document.getElementById("lat").value = e.latlng.lat
-			document.getElementById("long").value = e.latlng.lng
-			marker.setLatLng(e.latlng)
-			map.setView([e.latlng.lat, e.latlng.lng])
-		});
-		$('#enable-rangefinder').change(function (e) {
-			// checked will equal true if checked or false otherwise
-			setDvlAsRangefinder(e)
-		})
-
-	</script>
 </html>
