@@ -12,10 +12,10 @@ import math
 import os
 from enum import Enum
 
-HOSTNAME = "192.168.2.117"
+HOSTNAME = "waterlinked-dvl.local"
 DVL_DOWN = 1
 DVL_FORWARD = 2
-
+LATLON_TO_CM = 1.1131884502145034e5
 
 class MessageType(str, Enum):
     POSITION_DELTA = "POSITION_DELTA"
@@ -47,6 +47,8 @@ class DvlDriver (threading.Thread):
         "~"), ".config", "dvl", "settings.json")
 
     should_send = MessageType.POSITION_DELTA
+    reset_counter = 0
+    timestamp = 0
 
     def __init__(self, orientation=DVL_DOWN):
         threading.Thread.__init__(self)
@@ -93,7 +95,6 @@ class DvlDriver (threading.Thread):
                 "enabled": self.enabled,
                 "orientation": self.current_orientation,
                 "hostname": self.hostname,
-                "origin": self.origin,
                 "rangefinder": self.rangefinder,
                 "should_send": self.should_send,
             }))
@@ -133,6 +134,7 @@ class DvlDriver (threading.Thread):
                 self.version = request(f"http://{ip}/api/v1/about")
             except Exception as e:
                 print(f"could not open url at ip {ip} : {e}")
+                self.status = f"could not open url at ip {ip} : {e}"
             time.sleep(1)
 
     def detect_port(self):
@@ -141,15 +143,32 @@ class DvlDriver (threading.Thread):
         """
         while not self.port:
             time.sleep(1)
-            port_raw = request(
-                "http://{0}/api/v1/outputs/tcp".format(self.hostname))
-            if port_raw:
-                data = json.loads(port_raw)
-                if "port" not in data:
-                    print("no port data from API?!")
-                    self.port = 16171
-                self.port = data["port"]
-                print("Using port {0} from API".format(self.port))
+            # try old api first
+            try:
+                outputs_raw = request(
+                    "http://{0}/api/v1/outputs".format(self.hostname))
+                if outputs_raw:
+                    outputs = json.loads(outputs_raw)
+                    for output in outputs:
+                        if output["format"] != "json_v3":
+                            continue
+                        if "port" not in output:
+                            print("no port data from API?!")
+                            self.port = 16171
+                            print("Unable to get port from API, trying to use port {self.port}")
+                        self.port = int(output["port"])
+                        print("Using port {0} from API".format(self.port))
+            # then the new one
+            except:
+                port_raw = request(
+                    "http://{0}/api/v1/outputs/tcp".format(self.hostname))
+                if port_raw:
+                    data = json.loads(port_raw)
+                    if "port" not in data:
+                        print("no port data from API?!")
+                        self.port = 16171
+                    self.port = data["port"]
+                    print("Using port {0} from API".format(self.port))
 
     def wait_for_vehicle(self):
         """
@@ -175,12 +194,44 @@ class DvlDriver (threading.Thread):
         self.should_send = should_send
         self.save_settings()
 
+    def longitude_scale(self, lat):
+        scale = math.cos(lat * (math.pi / 180.0))
+        return max(scale, 0.01)
+
+    def latLngToXY (self, lat, lon):
+        x = (lat-self.origin[0]) * LATLON_TO_CM
+        y =  self.longitude_scale((lat + self.origin[0])/2) * LATLON_TO_CM * (lon-self.origin[1])
+        return [x, y]
+
+    def has_origin_set(self):
+        data = json.loads(self.mav.get("/GLOBAL_POSITION_INT/message"))
+        return data['lat'] != 0 or data['lon'] != 0
+
+    def set_current_position(self, lat, lon):
+        """
+        Sets the EKF origin to lat, lon
+        """
+        lat = float(lat)
+        lon = float(lon)
+        if not self.has_origin_set():
+            self.mav.set_gps_origin(lat, lon)
+            self.origin = [lat, lon]
+            self.save_settings()
+        else:
+            x, y = self.latLngToXY (lat, lon)
+            depth = float(self.mav.get("/VFR_HUD/message/alt"))
+
+            attitude = json.loads(self.mav.get("/ATTITUDE"))
+            positions = [x, y, -depth]
+            self.reset_counter += 1
+            self.mav.send_vision_position_estimate(self.timestamp, positions, reset_counter=self.reset_counter)
+
     def set_gps_origin(self, lat, lon):
         """
         Sets the EKF origin to lat, lon
         """
         self.mav.set_gps_origin(lat, lon)
-        self.origin = [lat, lon]
+        self.origin = [float(lat), float(lon)]
         self.save_settings()
 
     def set_enabled(self, enable: bool) -> bool:
@@ -197,6 +248,8 @@ class DvlDriver (threading.Thread):
         """
         self.rangefinder = enable
         self.save_settings()
+        if enable:
+            self.mav.set_param("RNGFND1_TYPE", "MAV_PARAM_TYPE_UINT8", 10) # MAVLINK
         return True
 
     def set_hostname(self, hostname: str) -> bool:
@@ -238,6 +291,8 @@ class DvlDriver (threading.Thread):
         self.mav.set_param("EK3_SRC1_POSXY", "MAV_PARAM_TYPE_UINT8", 6) # EXTNAV
         self.mav.set_param("EK3_SRC1_VELXY", "MAV_PARAM_TYPE_UINT8", 6) # EXTNAV
         self.mav.set_param("EK3_SRC1_POSZ", "MAV_PARAM_TYPE_UINT8", 1) # BARO
+        if self.rangefinder:
+            self.mav.set_param("RNGFND1_TYPE", "MAV_PARAM_TYPE_UINT8", 10) # MAVLINK
 
     def setup_connections(self, timeout=300):
         """
@@ -252,7 +307,7 @@ class DvlDriver (threading.Thread):
             except socket.error:
                 time.sleep(0.1)
             timeout -= 1
-        self.status = "Setup connection timeout"
+        self.status = f"Setup connection to {self.host}:{self.port} timed out"
         return False
 
     def reconnect(self):
@@ -312,6 +367,7 @@ class DvlDriver (threading.Thread):
             self.mav.send_rangefinder(alt)
 
         if not valid:
+            print("invalid reading, ignoring it.")
             return
 
         if self.should_send == MessageType.POSITION_DELTA:
@@ -334,11 +390,12 @@ class DvlDriver (threading.Thread):
     def handle_position_local(self, data):
         if self.should_send == MessageType.POSITION_ESTIMATE:
             x, y, z, roll, pitch, yaw = data["x"], data["y"], data["z"], data["roll"], data["pitch"], data["yaw"]
-            timestamp = data["ts"]
+            self.timestamp = data["ts"]
             self.mav.send_vision_position_estimate(
-                    timestamp,
+                    self.timestamp,
                     [x, y, z],
-                    [roll, pitch, yaw])
+                    [roll, pitch, yaw],
+                    reset_counter=self.reset_counter)
 
     def run(self):
         """

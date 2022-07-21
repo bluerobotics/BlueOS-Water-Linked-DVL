@@ -1,4 +1,4 @@
-from companionhelper import request, post
+from blueoshelper import request, post
 import requests
 import json
 import time
@@ -15,7 +15,10 @@ class Mavlink2RestHelper:
     Responsible for interfacing with Mavlink2Rest
     """
 
-    def __init__(self):
+    def __init__(self, vehicle: int=1, component: int=1):
+        # store vehicle and component to access telemetry data from
+        self.vehicle = vehicle
+        self.component = component
         # store vision template data so we don't need to fetch it multiple times
         self.start_time = time.time()
         self.vision_template = """
@@ -110,7 +113,7 @@ class Mavlink2RestHelper:
       0.0,
       0.0
     ],
-    "reset_counter": 0
+    "reset_counter": {reset_counter}
   }}
 }}"""
 
@@ -166,24 +169,29 @@ class Mavlink2RestHelper:
 }}
 """
 
-    def get_float(self, path: str) -> float:
+    def get_float(self, path: str, vehicle: int=None, component: int=None) -> float:
         """
-        Helper to get mavlink data from mavlink2rest
+        Helper to get mavlink data from mavlink2rest.
+        Uses initialised vehicle and component as defaults, unless overridden.
         Example: get_float('/VFR_HUD')
-        Returns the data as a float or False on failure
+        Returns the data as a float (nan on failure)
         """
-        response = request(MAVLINK2REST_URL + '/mavlink' + path)
+        response = self.get(path, vehicle, component)
         if not response:
             return float("nan")
         return float(response)
 
-    def get(self, path: str) -> str:
+    def get(self, path: str, vehicle: int=None, component: int=None) -> str:
         """
         Helper to get mavlink data from mavlink2rest
+        Uses initialised vehicle and component as defaults, unless overridden.
         Example: get('/VFR_HUD')
         Returns the data as text or False on failure
         """
-        response = request(MAVLINK2REST_URL + '/mavlink' + path)
+        vehicle = vehicle or self.vehicle
+        component = component or self.component
+        vehicle_path = f"/vehicles/{vehicle}/components/{component}/messages"
+        response = request(MAVLINK2REST_URL + '/mavlink' + vehicle_path + path)
         if not response:
             return False
         return response
@@ -271,7 +279,7 @@ class Mavlink2RestHelper:
 
         post(MAVLINK2REST_URL + '/mavlink', data=data)
 
-    def send_vision_position_estimate(self, timestamp, position_estimates, attitude_estimates=[0.0, 0.0, 0.0]):
+    def send_vision_position_estimate(self, timestamp, position_estimates, attitude_estimates=[0.0, 0.0, 0.0], reset_counter=0):
         "Sends message VISION_POSITION_ESTIMATE to flight controller"
         data = self.vision_position_estimate_template.format(
                                   us=int(timestamp*1e3),
@@ -280,8 +288,9 @@ class Mavlink2RestHelper:
                                   yaw=radians(attitude_estimates[2]),
                                   x=position_estimates[0],
                                   y=position_estimates[1],
-                                  z=position_estimates[2])
-        post(MAVLINK2REST_URL + '/mavlink', data=data)
+                                  z=position_estimates[2],
+                                  reset_counter=reset_counter)
+        print(post(MAVLINK2REST_URL + '/mavlink', data=data))
 
     def send_rangefinder(self, distance: float):
         "Sends message DISTANCE_SENSOR to flight controller"

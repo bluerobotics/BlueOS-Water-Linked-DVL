@@ -50,11 +50,11 @@ class API:
         """
         return self.dvl.set_hostname(hostname)
 
-    def set_gps_origin(self, lat: str, lon: str) -> bool:
+    def set_current_position(self, lat: str, lon: str) -> bool:
         """
         Sets the EKF origin to lat, lon
         """
-        return self.dvl.set_gps_origin(lat, lon)
+        return self.dvl.set_current_position(lat, lon)
 
     def set_use_as_rangefinder(self, enabled: str) -> bool:
         """
@@ -96,9 +96,9 @@ if __name__ == '__main__':
     def set_hostname(hostname):
         return str(api.set_hostname(hostname))
 
-    @app.route('/origin/<lat>/<lon>')
+    @app.route('/setcurrentposition/<lat>/<lon>')
     def set_gps_origin(lat, lon):
-        return str(api.set_gps_origin(lat, lon))
+        return str(api.set_current_position(lat, lon))
 
     @app.route('/register_service')
     def register_service():
