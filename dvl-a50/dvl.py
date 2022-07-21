@@ -140,15 +140,32 @@ class DvlDriver (threading.Thread):
         """
         while not self.port:
             time.sleep(1)
-            port_raw = request(
-                "http://{0}/api/v1/outputs/tcp".format(self.hostname))
-            if port_raw:
-                data = json.loads(port_raw)
-                if "port" not in data:
-                    print("no port data from API?!")
-                    self.port = 16171
-                self.port = data["port"]
-                print("Using port {0} from API".format(self.port))
+            # try old api first
+            try:
+                outputs_raw = request(
+                    "http://{0}/api/v1/outputs".format(self.hostname))
+                if outputs_raw:
+                    outputs = json.loads(outputs_raw)
+                    for output in outputs:
+                        if output["format"] != "json_v3":
+                            continue
+                        if "port" not in output:
+                            print("no port data from API?!")
+                            self.port = 16171
+                            print("Unable to get port from API, trying to use port {self.port}")
+                        self.port = int(output["port"])
+                        print("Using port {0} from API".format(self.port))
+            # then the new one
+            except:
+                port_raw = request(
+                    "http://{0}/api/v1/outputs/tcp".format(self.hostname))
+                if port_raw:
+                    data = json.loads(port_raw)
+                    if "port" not in data:
+                        print("no port data from API?!")
+                        self.port = 16171
+                    self.port = data["port"]
+                    print("Using port {0} from API".format(self.port))
 
     def wait_for_vehicle(self):
         """
