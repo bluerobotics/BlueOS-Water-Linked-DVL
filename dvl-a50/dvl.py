@@ -12,7 +12,7 @@ import math
 import os
 from enum import Enum
 
-HOSTNAME = "192.168.2.117"
+HOSTNAME = "waterlinked-dvl.local"
 DVL_DOWN = 1
 DVL_FORWARD = 2
 
