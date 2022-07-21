@@ -134,6 +134,7 @@ class DvlDriver (threading.Thread):
                 self.version = request(f"http://{ip}/api/v1/about")
             except Exception as e:
                 print(f"could not open url at ip {ip} : {e}")
+                self.status = f"could not open url at ip {ip} : {e}"
             time.sleep(1)
 
     def detect_port(self):
@@ -302,7 +303,7 @@ class DvlDriver (threading.Thread):
             except socket.error:
                 time.sleep(0.1)
             timeout -= 1
-        self.status = "Setup connection timeout"
+        self.status = f"Setup connection to {self.host}:{self.port} timed out"
         return False
 
     def reconnect(self):
@@ -362,6 +363,7 @@ class DvlDriver (threading.Thread):
             self.mav.send_rangefinder(alt)
 
         if not valid:
+            print("invalid reading, ignoring it.")
             return
 
         if self.should_send == MessageType.POSITION_DELTA:
