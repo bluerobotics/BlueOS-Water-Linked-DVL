@@ -110,7 +110,7 @@ class Mavlink2RestHelper:
       0.0,
       0.0
     ],
-    "reset_counter": 0
+    "reset_counter": {reset_counter}
   }}
 }}"""
 
@@ -271,7 +271,7 @@ class Mavlink2RestHelper:
 
         post(MAVLINK2REST_URL + '/mavlink', data=data)
 
-    def send_vision_position_estimate(self, timestamp, position_estimates, attitude_estimates=[0.0, 0.0, 0.0]):
+    def send_vision_position_estimate(self, timestamp, position_estimates, attitude_estimates=[0.0, 0.0, 0.0], reset_counter=0):
         "Sends message VISION_POSITION_ESTIMATE to flight controller"
         data = self.vision_position_estimate_template.format(
                                   us=int(timestamp*1e3),
@@ -280,8 +280,9 @@ class Mavlink2RestHelper:
                                   yaw=radians(attitude_estimates[2]),
                                   x=position_estimates[0],
                                   y=position_estimates[1],
-                                  z=position_estimates[2])
-        post(MAVLINK2REST_URL + '/mavlink', data=data)
+                                  z=position_estimates[2],
+                                  reset_counter=reset_counter)
+        print(post(MAVLINK2REST_URL + '/mavlink', data=data))
 
     def send_rangefinder(self, distance: float):
         "Sends message DISTANCE_SENSOR to flight controller"
