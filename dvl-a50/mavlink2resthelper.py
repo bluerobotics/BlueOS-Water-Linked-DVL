@@ -1,4 +1,4 @@
-from companionhelper import request, post
+from blueoshelper import request, post
 import requests
 import json
 import time
@@ -172,7 +172,7 @@ class Mavlink2RestHelper:
         Example: get_float('/VFR_HUD')
         Returns the data as a float or False on failure
         """
-        response = request(MAVLINK2REST_URL + '/mavlink' + path)
+        response = request(MAVLINK2REST_URL + '/mavlink/vehicles/1/components/1/messages/' + path)
         if not response:
             return float("nan")
         return float(response)
@@ -183,7 +183,7 @@ class Mavlink2RestHelper:
         Example: get('/VFR_HUD')
         Returns the data as text or False on failure
         """
-        response = request(MAVLINK2REST_URL + '/mavlink' + path)
+        response = request(MAVLINK2REST_URL + '/mavlink/vehicles/1/components/1/messages/' + path)
         if not response:
             return False
         return response
