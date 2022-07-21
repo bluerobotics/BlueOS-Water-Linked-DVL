@@ -15,7 +15,7 @@ from enum import Enum
 HOSTNAME = "waterlinked-dvl.local"
 DVL_DOWN = 1
 DVL_FORWARD = 2
-
+LATLON_TO_CM = 1.1131884502145034e5
 
 class MessageType(str, Enum):
     POSITION_DELTA = "POSITION_DELTA"
@@ -93,7 +93,6 @@ class DvlDriver (threading.Thread):
                 "enabled": self.enabled,
                 "orientation": self.current_orientation,
                 "hostname": self.hostname,
-                "origin": self.origin,
                 "rangefinder": self.rangefinder,
                 "should_send": self.should_send,
             }))
