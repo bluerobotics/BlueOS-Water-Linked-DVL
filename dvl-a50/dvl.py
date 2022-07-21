@@ -248,6 +248,8 @@ class DvlDriver (threading.Thread):
         """
         self.rangefinder = enable
         self.save_settings()
+        if enable:
+            self.mav.set_param("RNGFND1_TYPE", "MAV_PARAM_TYPE_UINT8", 10) # MAVLINK
         return True
 
     def set_hostname(self, hostname: str) -> bool:
@@ -289,6 +291,8 @@ class DvlDriver (threading.Thread):
         self.mav.set_param("EK3_SRC1_POSXY", "MAV_PARAM_TYPE_UINT8", 6) # EXTNAV
         self.mav.set_param("EK3_SRC1_VELXY", "MAV_PARAM_TYPE_UINT8", 6) # EXTNAV
         self.mav.set_param("EK3_SRC1_POSZ", "MAV_PARAM_TYPE_UINT8", 1) # BARO
+        if self.rangefinder:
+            self.mav.set_param("RNGFND1_TYPE", "MAV_PARAM_TYPE_UINT8", 10) # MAVLINK
 
     def setup_connections(self, timeout=300):
         """
