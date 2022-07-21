@@ -47,6 +47,8 @@ class DvlDriver (threading.Thread):
         "~"), ".config", "dvl", "settings.json")
 
     should_send = MessageType.POSITION_DELTA
+    reset_counter = 0
+    timestamp = 0
 
     def __init__(self, orientation=DVL_DOWN):
         threading.Thread.__init__(self)
@@ -191,12 +193,44 @@ class DvlDriver (threading.Thread):
         self.should_send = should_send
         self.save_settings()
 
+    def longitude_scale(self, lat):
+        scale = math.cos(lat * (math.pi / 180.0))
+        return max(scale, 0.01)
+
+    def latLngToXY (self, lat, lon):
+        x = (lat-self.origin[0]) * LATLON_TO_CM
+        y =  self.longitude_scale((lat + self.origin[0])/2) * LATLON_TO_CM * (lon-self.origin[1])
+        return [x, y]
+
+    def has_origin_set(self):
+        data = json.loads(self.mav.get("/GLOBAL_POSITION_INT/message"))
+        return data['lat'] != 0 or data['lon'] != 0
+
+    def set_current_position(self, lat, lon):
+        """
+        Sets the EKF origin to lat, lon
+        """
+        lat = float(lat)
+        lon = float(lon)
+        if not self.has_origin_set():
+            self.mav.set_gps_origin(lat, lon)
+            self.origin = [lat, lon]
+            self.save_settings()
+        else:
+            x, y = self.latLngToXY (lat, lon)
+            depth = float(self.mav.get("/VFR_HUD/message/alt"))
+
+            attitude = json.loads(self.mav.get("/ATTITUDE"))
+            positions = [x, y, -depth]
+            self.reset_counter += 1
+            self.mav.send_vision_position_estimate(self.timestamp, positions, reset_counter=self.reset_counter)
+
     def set_gps_origin(self, lat, lon):
         """
         Sets the EKF origin to lat, lon
         """
         self.mav.set_gps_origin(lat, lon)
-        self.origin = [lat, lon]
+        self.origin = [float(lat), float(lon)]
         self.save_settings()
 
     def set_enabled(self, enable: bool) -> bool:
@@ -350,11 +384,12 @@ class DvlDriver (threading.Thread):
     def handle_position_local(self, data):
         if self.should_send == MessageType.POSITION_ESTIMATE:
             x, y, z, roll, pitch, yaw = data["x"], data["y"], data["z"], data["roll"], data["pitch"], data["yaw"]
-            timestamp = data["ts"]
+            self.timestamp = data["ts"]
             self.mav.send_vision_position_estimate(
-                    timestamp,
+                    self.timestamp,
                     [x, y, z],
-                    [roll, pitch, yaw])
+                    [roll, pitch, yaw],
+                    reset_counter=self.reset_counter)
 
     def run(self):
         """
