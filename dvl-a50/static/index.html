@@ -181,10 +181,10 @@
 			},
 			createMap() {
 				map = L.map('mapid').setView([0, 0], 1);
-				L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-					attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+				L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
 					maxZoom: 22,
-					maxNativeZoom: 19
+					subdomains:['mt0','mt1','mt2','mt3'],
+					maxNativeZoom: 20
 				}).addTo(map);
 
 				marker = L.marker([33.841456, -118.335212], { title: "New Origin", draggable: true })
