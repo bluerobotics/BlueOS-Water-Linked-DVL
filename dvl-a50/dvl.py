@@ -1,5 +1,5 @@
 """
-Code for integration of Waterlinked DVL A50 with Companion and ArduSub
+Code for integration of Waterlinked DVL A50 with BlueOS and ArduSub
 """
 import threading
 import time
