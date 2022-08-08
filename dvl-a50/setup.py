@@ -13,4 +13,4 @@ setup(name='dvl_service',
       version='0.1.0',
       description='Waterlinked A-50 DVL service',
       license='MIT',
-      install_requires=['Flask == 1.0.3','MarkupSafe == 0.23','itsdangerous == 0.24','Jinja2 == 2.10', 'click == 7.1.2', 'Werkzeug==1.0.1', 'requests'])
+      install_requires=['python3-nmap == 1.5.4', 'loguru == 0.5.3', 'Flask == 1.0.3','MarkupSafe == 0.23','itsdangerous == 0.24','Jinja2 == 2.10', 'click == 7.1.2', 'Werkzeug==1.0.1', 'requests'])

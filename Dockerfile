@@ -1,5 +1,7 @@
 FROM python:3.9-slim-bullseye
 
+RUN apt update && apt install -y nmap
+
 # Create default user folder
 RUN mkdir -p /home/pi
 
