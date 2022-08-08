@@ -11,6 +11,7 @@ from select import select
 import math
 import os
 from enum import Enum
+from dvlfinder import find_the_dvl
 
 HOSTNAME = "waterlinked-dvl.local"
 DVL_DOWN = 1
@@ -129,13 +130,16 @@ class DvlDriver (threading.Thread):
         ip = self.hostname
         self.status = f"Trying to talk to dvl at http://{ip}/api/v1/about"
         while not self.version:
-            # TODO: get mdns back in here
-            try:
-                self.version = request(f"http://{ip}/api/v1/about")
-            except Exception as e:
-                print(f"could not open url at ip {ip} : {e}")
-                self.status = f"could not open url at ip {ip} : {e}"
+            if not request(f"http://{ip}/api/v1/about"):
+                self.status = f"could not talk to dvl at {ip}, looking for it in the local network..."
+            found_dvl = find_the_dvl()
+            if found_dvl:
+                print(f"Dvl found at address {found_dvl}, using it instead.")
+                self.status = f"Dvl found at address {found_dvl}, using it instead."
+                self.hostname = found_dvl
+                return
             time.sleep(1)
+
 
     def detect_port(self):
         """
