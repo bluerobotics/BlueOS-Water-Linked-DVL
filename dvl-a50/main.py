@@ -97,7 +97,7 @@ if __name__ == '__main__':
         return str(api.set_hostname(hostname))
 
     @app.route('/setcurrentposition/<lat>/<lon>')
-    def set_gps_origin(lat, lon):
+    def set_current_position(lat, lon):
         return str(api.set_current_position(lat, lon))
 
     @app.route('/register_service')

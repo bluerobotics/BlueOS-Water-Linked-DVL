@@ -3,7 +3,7 @@ Code for integration of Waterlinked DVL A50 with Companion and ArduSub
 """
 import threading
 import time
-from mavlink2resthelper import Mavlink2RestHelper
+from mavlink2resthelper import Mavlink2RestHelper, GPS_GLOBAL_ORIGIN_ID
 from blueoshelper import request
 import json
 import socket
@@ -182,9 +182,27 @@ class DvlDriver (threading.Thread):
         y =  self.longitude_scale((lat + self.origin[0])/2) * LATLON_TO_CM * (lon-self.origin[1])
         return [x, y]
 
-    def has_origin_set(self):
-        data = json.loads(self.mav.get("/GLOBAL_POSITION_INT/message"))
-        return data['lat'] != 0 or data['lon'] != 0
+    def has_origin_set(self) -> bool:
+        try:
+            old_time = self.mav.get_float("/GPS_GLOBAL_ORIGIN/message/time_usec")
+        except:
+            old_time = 0
+
+        for _try in range(5):
+            print(f"trying to read origin, try # {_try}")
+            self.mav.request_message(GPS_GLOBAL_ORIGIN_ID)
+            time.sleep(0.5) # make this a timeout?
+            try:
+                new_origin_data = json.loads(self.mav.get("/GPS_GLOBAL_ORIGIN/message"))
+                if new_origin_data["time_usec"] != old_time:
+                    self.origin = [new_origin_data["latitude"]*1e-7, new_origin_data["longitude"]*1e-7]
+                    return True
+                else:
+                    continue # try again
+            except Exception as e:
+                print(e)
+                return False
+        return False
 
     def set_current_position(self, lat: float, lon: float):
         """
@@ -192,17 +210,19 @@ class DvlDriver (threading.Thread):
         """
         # If origin has never been set, set it
         if not self.has_origin_set():
-            self.mav.set_gps_origin(lat, lon)
-            self.origin = [lat, lon]
-            self.save_settings()
+            print("trying to set origin")
+            self.set_gps_origin(lat, lon)
         else:
-            x, y = self.latLngToXY (lat, lon)
+            print("not trying to set origin")
+            # if we already have an origin set, send a new position instead
+            x, y = self.lat_lng_to_NE_XY_cm(lat, lon)
             depth = float(self.mav.get("/VFR_HUD/message/alt"))
 
-            attitude = json.loads(self.mav.get("/ATTITUDE"))
+            attitude = json.loads(self.mav.get("/ATTITUDE/message"))
+            attitudes = [attitude["roll"], attitude["pitch"], attitude["yaw"]]
             positions = [x, y, -depth]
             self.reset_counter += 1
-            self.mav.send_vision_position_estimate(self.timestamp, positions, reset_counter=self.reset_counter)
+            self.mav.send_vision_position_estimate(self.timestamp, positions, attitudes, reset_counter=self.reset_counter)
 
     def set_gps_origin(self, lat: float, lon: float) -> None:
         """
@@ -244,7 +264,7 @@ class DvlDriver (threading.Thread):
             self.save_settings()
             return True
         except Exception as e:
-            print("Failed set hostname: '{}'".format(e))
+            print(f"Failed set hostname: '{e}'")
             return False
 
     def setup_mavlink(self) -> None:
