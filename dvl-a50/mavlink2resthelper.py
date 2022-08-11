@@ -3,9 +3,10 @@ import requests
 import json
 import time
 from math import radians
-from typing import Optional
+from typing import Any, Optional
 
 MAVLINK2REST_URL = "http://127.0.0.1/mavlink2rest"
+GPS_GLOBAL_ORIGIN_ID = 49
 
 # holds the last status so we dont flood it
 last_status = ""
@@ -197,6 +198,27 @@ class Mavlink2RestHelper:
             return None
         return response
 
+    def get_updated_mavlink_message(
+        self,
+        message_name: str,
+        vehicle: int = 1,
+        component: int = 1,
+        timeout: float = 10.0,
+    ) -> Any:
+        first_message = self.get(message_name, vehicle, component)
+        first_message_counter = first_message["status"]["time"]["counter"]
+        t0 = time.time()
+        while True:
+            new_message = self.get(message_name, vehicle, component)
+            new_message_counter = new_message["status"]["time"]["counter"]
+            if new_message_counter > first_message_counter:
+                break
+            if (time.time() - t0) > timeout:
+                raise FetchUpdatedMessageFail(f"Did not receive an updated {message_name} before timeout.")
+            time.sleep(timeout / 10.0)
+
+        return new_message
+
     def get_message_frequency(self, message_name):
         """
         Returns the frequency at which message "message_name" is being received, 0 if unavailable
@@ -310,3 +332,24 @@ class Mavlink2RestHelper:
         fetches ROV orientation
         """
         return self.get_float('/VFR_HUD/heading')
+
+    def request_message(self, msg_id) -> bool:
+        """
+        Requests message with msg_id, retuns True if message is accepted, False otherwise
+        """
+        # load message template from mavlink2rest helper
+        try:
+            data = json.loads(requests.get(
+                MAVLINK2REST_URL + '/helper/mavlink?name=COMMAND_LONG').text)
+        except:
+            return False
+
+        data["message"]["command"] = {"type": 'MAV_CMD_REQUEST_MESSAGE'}
+        data["message"]["param1"] = msg_id
+
+        try:
+            result = requests.post(MAVLINK2REST_URL + '/mavlink', json=data)
+            return result.status_code == 200
+        except Exception as error:
+            report_status("Error requesting message: " + str(error))
+            return False
