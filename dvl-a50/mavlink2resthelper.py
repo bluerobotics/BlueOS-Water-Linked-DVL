@@ -3,6 +3,7 @@ import requests
 import json
 import time
 from math import radians
+from typing import Optional
 
 MAVLINK2REST_URL = "http://127.0.0.1/mavlink2rest"
 
@@ -169,7 +170,7 @@ class Mavlink2RestHelper:
 }}
 """
 
-    def get_float(self, path: str, vehicle: int=None, component: int=None) -> float:
+    def get_float(self, path: str, vehicle: Optional[int]=None, component: Optional[int]=None) -> float:
         """
         Helper to get mavlink data from mavlink2rest.
         Uses initialised vehicle and component as defaults, unless overridden.
@@ -181,7 +182,7 @@ class Mavlink2RestHelper:
             return float("nan")
         return float(response)
 
-    def get(self, path: str, vehicle: int=None, component: int=None) -> str:
+    def get(self, path: str, vehicle: Optional[int]=None, component: Optional[int]=None) -> Optional[str]:
         """
         Helper to get mavlink data from mavlink2rest
         Uses initialised vehicle and component as defaults, unless overridden.
@@ -193,7 +194,7 @@ class Mavlink2RestHelper:
         vehicle_path = f"/vehicles/{vehicle}/components/{component}/messages"
         response = request(MAVLINK2REST_URL + '/mavlink' + vehicle_path + path)
         if not response:
-            return False
+            return None
         return response
 
     def get_message_frequency(self, message_name):

@@ -54,7 +54,7 @@ class API:
         """
         Sets the EKF origin to lat, lon
         """
-        return self.dvl.set_current_position(lat, lon)
+        return self.dvl.set_current_position(float(lat), float(lon))
 
     def set_use_as_rangefinder(self, enabled: str) -> bool:
         """
