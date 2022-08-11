@@ -13,6 +13,8 @@ import os
 from enum import Enum
 from dvlfinder import find_the_dvl
 
+from typing import Any, List, Dict
+
 HOSTNAME = "waterlinked-dvl.local"
 DVL_DOWN = 1
 DVL_FORWARD = 2
@@ -36,7 +38,7 @@ class DvlDriver (threading.Thread):
     version = ""
     mav = Mavlink2RestHelper()
     socket = None
-    port = 0
+    port = 16171  # Waterlinked mentioned they won't allow changing or disabling this
     last_attitude = (0, 0, 0)  # used for calculating the attitude delta
     current_orientation = DVL_DOWN
     enabled = True
@@ -139,40 +141,6 @@ class DvlDriver (threading.Thread):
                 self.hostname = found_dvl
                 return
             time.sleep(1)
-
-
-    def detect_port(self):
-        """
-        Fetchs the TCP port from the DVL api, stores in self.port
-        """
-        while not self.port:
-            time.sleep(1)
-            # try old api first
-            try:
-                outputs_raw = request(
-                    "http://{0}/api/v1/outputs".format(self.hostname))
-                if outputs_raw:
-                    outputs = json.loads(outputs_raw)
-                    for output in outputs:
-                        if output["format"] != "json_v3":
-                            continue
-                        if "port" not in output:
-                            print("no port data from API?!")
-                            self.port = 16171
-                            print("Unable to get port from API, trying to use port {self.port}")
-                        self.port = int(output["port"])
-                        print("Using port {0} from API".format(self.port))
-            # then the new one
-            except:
-                port_raw = request(
-                    "http://{0}/api/v1/outputs/tcp".format(self.hostname))
-                if port_raw:
-                    data = json.loads(port_raw)
-                    if "port" not in data:
-                        print("no port data from API?!")
-                        self.port = 16171
-                    self.port = data["port"]
-                    print("Using port {0} from API".format(self.port))
 
     def wait_for_vehicle(self):
         """
@@ -407,7 +375,6 @@ class DvlDriver (threading.Thread):
         """
         self.load_settings()
         self.look_for_dvl()
-        self.detect_port()
         self.setup_connections()
         self.wait_for_vehicle()
         self.setup_mavlink()
