@@ -53,11 +53,11 @@ class DvlDriver (threading.Thread):
     reset_counter = 0
     timestamp = 0
 
-    def __init__(self, orientation=DVL_DOWN):
+    def __init__(self, orientation=DVL_DOWN) -> None:
         threading.Thread.__init__(self)
         self.current_orientation = orientation
 
-    def load_settings(self):
+    def load_settings(self) -> None:
         """
         Load settings from .config/dvl/settings.json
         """
@@ -80,11 +80,11 @@ class DvlDriver (threading.Thread):
             print("using default instead")
 
 
-    def save_settings(self):
+    def save_settings(self) -> None:
         """
         Load settings from .config/dvl/settings.json
         """
-        def ensure_dir(file_path):
+        def ensure_dir(file_path) -> None:
             """
             Helper to guarantee that the file path exists
             """
@@ -117,7 +117,7 @@ class DvlDriver (threading.Thread):
         }
 
     @property
-    def host(self):
+    def host(self) -> str:
         """ Make sure there is no port in the hostname allows local testing by where http can be running on other ports than 80"""
         try:
             host = self.hostname.split(":")[0]
@@ -166,11 +166,18 @@ class DvlDriver (threading.Thread):
         self.should_send = should_send
         self.save_settings()
 
-    def longitude_scale(self, lat):
-        scale = math.cos(lat * (math.pi / 180.0))
+    @staticmethod
+    def longitude_scale(lat: float):
+        """
+        from https://github.com/ArduPilot/ardupilot/blob/Sub-4.1/libraries/AP_Common/Location.cpp#L325
+        """
+        scale = math.cos(math.radians(lat))
         return max(scale, 0.01)
 
-    def latLngToXY (self, lat, lon):
+    def lat_lng_to_NE_XY_cm (self, lat: float, lon: float) -> List[float]:
+        """
+        From https://github.com/ArduPilot/ardupilot/blob/Sub-4.1/libraries/AP_Common/Location.cpp#L206
+        """
         x = (lat-self.origin[0]) * LATLON_TO_CM
         y =  self.longitude_scale((lat + self.origin[0])/2) * LATLON_TO_CM * (lon-self.origin[1])
         return [x, y]
@@ -179,12 +186,11 @@ class DvlDriver (threading.Thread):
         data = json.loads(self.mav.get("/GLOBAL_POSITION_INT/message"))
         return data['lat'] != 0 or data['lon'] != 0
 
-    def set_current_position(self, lat, lon):
+    def set_current_position(self, lat: float, lon: float):
         """
         Sets the EKF origin to lat, lon
         """
-        lat = float(lat)
-        lon = float(lon)
+        # If origin has never been set, set it
         if not self.has_origin_set():
             self.mav.set_gps_origin(lat, lon)
             self.origin = [lat, lon]
@@ -198,7 +204,7 @@ class DvlDriver (threading.Thread):
             self.reset_counter += 1
             self.mav.send_vision_position_estimate(self.timestamp, positions, reset_counter=self.reset_counter)
 
-    def set_gps_origin(self, lat, lon):
+    def set_gps_origin(self, lat: float, lon: float) -> None:
         """
         Sets the EKF origin to lat, lon
         """
@@ -241,7 +247,7 @@ class DvlDriver (threading.Thread):
             print("Failed set hostname: '{}'".format(e))
             return False
 
-    def setup_mavlink(self):
+    def setup_mavlink(self) -> None:
         """
         Sets up mavlink streamrates so we have the needed messages at the
         appropriate rates
@@ -249,7 +255,7 @@ class DvlDriver (threading.Thread):
         self.status = "Setting up MAVLink streams..."
         self.mav.ensure_message_frequency('ATTITUDE', 30, 5)
 
-    def setup_params(self):
+    def setup_params(self) -> None:
         """
         Sets up the required params for DVL integration
         """
@@ -266,7 +272,7 @@ class DvlDriver (threading.Thread):
         if self.rangefinder:
             self.mav.set_param("RNGFND1_TYPE", "MAV_PARAM_TYPE_UINT8", 10) # MAVLINK
 
-    def setup_connections(self, timeout=300):
+    def setup_connections(self, timeout=300) -> None:
         """
         Sets up the socket to talk to the DVL
         """
@@ -314,7 +320,7 @@ class DvlDriver (threading.Thread):
         self.last_attitude = current_attitude
         return angles
 
-    def handle_velocity(self, data):
+    def handle_velocity(self, data: Dict[str,Any]) -> None:
         # TODO: test if this is used by ArduSub or could be [0, 0, 0]
         # extract velocity data from the DVL JSON
 
