@@ -1,4 +1,4 @@
-from companionhelper import request, post
+from blueoshelper import request, post
 import requests
 import json
 import time
