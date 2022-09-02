@@ -299,8 +299,9 @@ class DvlDriver (threading.Thread):
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
                 self.socket.close()
-            except:
-                pass
+            except Exception as e:
+                self.debug(f"unable to reconnect: {e}, looking for dvl again...")
+                self.look_for_dvl()
         success = self.setup_connections()
         if success:
             self.last_recv_time = time.time()  # Don't disconnect directly after connect
