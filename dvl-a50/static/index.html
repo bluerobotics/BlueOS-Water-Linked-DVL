@@ -28,7 +28,7 @@
 				<h1>Waterlinked DVL A-50 Driver</h1>
 				<v-row>
 					<v-col>
-						<v-card height="200">
+						<v-card height="600">
 							<v-switch v-model="this.enabled" inset :label="`Enable Driver`" @change="setDvlEnabled($event)"></v-switch>
 							<v-form ref="form" @submit.prevent="setDvlHostname()">
 								<v-text-field
@@ -36,8 +36,17 @@
 									label="Hostname/IP"
 								></v-text-field>
 							</v-form>
+							<h2>Rangefinder:</h2>
+							<v-checkbox v-model="this.rangefinder" :label="`Use as MAVLink rangefinder`" @change="setDvlAsRangefinder($event)"></v-checkbox>
+							<h4>Status</h4>
+							<div>
+								<textarea readonly style="width:100%;"
+									id="dvl-status"> {{status}} </textarea>
+							</div>
 						</v-card>
 					</v-col>
+					<!-- uncoomment this to have control of what kind of message is bein sent and to allow pointing the dvl forward-->
+					<!--
 					<v-col>
 						<v-card height="200">
 							<h2>Message type:</h2>
@@ -56,17 +65,12 @@
 						</v-card>
 					</v-col>
 					<v-col>
-						<v-card height="200">
-							<h2>Rangefinder:</h2>
-							<v-checkbox v-model="this.rangefinder" :label="`Use as MAVLink rangefinder`" @change="setDvlAsRangefinder($event)"></v-checkbox>
-						</v-card>
-					</v-col>
-				</v-row>
-				<v-row>
-					<v-col>
+					-->
+					<v-col
+					class="col-12 col-sm-6 col-md-8">
 						<v-card height="600">
 							<h3>Set Current Location</h3>
-							<div id="mapid" style="height: 400px;"></div>
+							<div id="mapid" style="height: 450px;"></div>
 							<form>
 								<label for="lat">Latitude:</label>
 								<input type="text" id="lat" name="lat" v-model="this.newOrigin[0]">
@@ -79,18 +83,7 @@
 				</v-row>
 				<v-row>
 					<v-col>
-						<v-card height="200">
-							<h4>Status</h4>
-							<div>
-								<textarea readonly style="width:100%;"
-									id="dvl-status"> {{status}} </textarea>
-							</div>
-						</v-card>
-					</v-col>
-				</v-row>
-				<v-row>
-					<v-col>
-						<v-card height="500">
+						<v-card height="900" v-if='hostname'>
 							<iframe style="width: 100%; height: 100%;" :src='`http://${hostname}`'></iframe>
 						</v-card>
 					</v-col>
