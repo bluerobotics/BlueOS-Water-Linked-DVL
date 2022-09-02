@@ -92,10 +92,6 @@ if __name__ == '__main__':
     def set_message_type(messagetype: str):
         return str(api.set_message_type(messagetype))
 
-    @app.route('/hostname/<hostname>')
-    def set_hostname(hostname):
-        return str(api.set_hostname(hostname))
-
     @app.route('/setcurrentposition/<lat>/<lon>')
     def set_current_position(lat, lon):
         return str(api.set_current_position(lat, lon))
