@@ -57,6 +57,10 @@ class DvlDriver (threading.Thread):
         threading.Thread.__init__(self)
         self.current_orientation = orientation
 
+    def debug(self, msg: str) -> None:
+        self.status = msg
+        print(msg)
+
     def load_settings(self) -> None:
         """
         Load settings from .config/dvl/settings.json
@@ -133,11 +137,10 @@ class DvlDriver (threading.Thread):
         self.status = f"Trying to talk to dvl at http://{ip}/api/v1/about"
         while not self.version:
             if not request(f"http://{ip}/api/v1/about"):
-                self.status = f"could not talk to dvl at {ip}, looking for it in the local network..."
+                self.debug(f"could not talk to dvl at {ip}, looking for it in the local network...")
             found_dvl = find_the_dvl()
             if found_dvl:
-                print(f"Dvl found at address {found_dvl}, using it instead.")
-                self.status = f"Dvl found at address {found_dvl}, using it instead."
+                self.debug(f"Dvl found at address {found_dvl}, using it instead.")
                 self.hostname = found_dvl
                 return
             time.sleep(1)
@@ -262,6 +265,7 @@ class DvlDriver (threading.Thread):
                 self.socket.close()
             self.setup_connections(timeout=1)
             self.save_settings()
+            self.debug(f"new hostname: '{hostname}'")
             return True
         except Exception as e:
             print(f"Failed set hostname: '{e}'")
