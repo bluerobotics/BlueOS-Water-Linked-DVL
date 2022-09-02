@@ -253,24 +253,6 @@ class DvlDriver (threading.Thread):
             self.mav.set_param("RNGFND1_TYPE", "MAV_PARAM_TYPE_UINT8", 10) # MAVLINK
         return True
 
-    def set_hostname(self, hostname: str) -> bool:
-        """
-        Sets the hostname where the driver looks for the DVL
-        (typically waterlinked-dvl.local)
-        """
-        try:
-            self.hostname = hostname
-            if self.socket:  # Don't crash if the socket hasn't been configured yet
-                self.socket.shutdown(socket.SHUT_RDWR)
-                self.socket.close()
-            self.setup_connections(timeout=1)
-            self.save_settings()
-            self.debug(f"new hostname: '{hostname}'")
-            return True
-        except Exception as e:
-            print(f"Failed set hostname: '{e}'")
-            return False
-
     def setup_mavlink(self) -> None:
         """
         Sets up mavlink streamrates so we have the needed messages at the

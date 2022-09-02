@@ -30,12 +30,6 @@
 					<v-col>
 						<v-card height="600">
 							<v-switch v-model="this.enabled" inset :label="`Enable Driver`" @change="setDvlEnabled($event)"></v-switch>
-							<v-form ref="form" @submit.prevent="setDvlHostname()">
-								<v-text-field
-									v-model="newHostname"
-									label="Hostname/IP"
-								></v-text-field>
-							</v-form>
 							<h2>Rangefinder:</h2>
 							<v-checkbox v-model="this.rangefinder" :label="`Use as MAVLink rangefinder`" @change="setDvlAsRangefinder($event)"></v-checkbox>
 							<h4>Status</h4>
