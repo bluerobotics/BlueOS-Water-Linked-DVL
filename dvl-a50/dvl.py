@@ -309,24 +309,6 @@ class DvlDriver (threading.Thread):
 
         return False
 
-    def update_attitude(self) -> list:
-        """
-        Fetchs the Attitude and calculate Attitude deltas
-        """
-        # Getting the data from mavlink2rest takes around 5ms
-        attitude_raw = self.mav.get("/ATTITUDE")
-        if not attitude_raw:
-            # TODO: report status?
-            print("Failed fetching attitude!")
-            return [0, 0, 0]
-        attitude = json.loads(attitude_raw)
-        current_attitude = (
-            attitude["roll"], attitude["pitch"], attitude["yaw"])
-        angles = list(map(float.__sub__, current_attitude, self.last_attitude))
-        angles[2] = angles[2] % (math.pi*2)
-        self.last_attitude = current_attitude
-        return angles
-
     def handle_velocity(self, data: Dict[str,Any]) -> None:
         # TODO: test if this is used by ArduSub or could be [0, 0, 0]
         # extract velocity data from the DVL JSON
@@ -343,8 +325,7 @@ class DvlDriver (threading.Thread):
         confidence = 100 * (1-min(_fom_max, fom)/_fom_max) if valid else 0
         # confidence = 100 if valid else 0
 
-        # feeding back the angles seem to aggravate the gyro drift issue
-        # angles = self.update_attitude()
+        # feeding back the angles seemed to aggravate the gyro drift issue
         angles = [0, 0, 0]
 
 
