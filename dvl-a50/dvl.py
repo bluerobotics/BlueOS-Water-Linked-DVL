@@ -52,6 +52,9 @@ class DvlDriver (threading.Thread):
     should_send = MessageType.POSITION_DELTA
     reset_counter = 0
     timestamp = 0
+    last_temperature_check_time = 0
+    temperature_check_interval_s = 30
+    temperature_too_hot = 45
 
     def __init__(self, orientation=DVL_DOWN) -> None:
         threading.Thread.__init__(self)
@@ -363,6 +366,21 @@ class DvlDriver (threading.Thread):
                     [roll, pitch, yaw],
                     reset_counter=self.reset_counter)
 
+    def check_temperature(self):
+        now = time.time()
+        if now - self.last_temperature_check_time < self.temperature_check_interval_s:
+            return
+        self.last_temperature_check_time = now
+        try:
+            status = json.loads(request(f"http://{self.hostname}/api/v1/about/status"))
+
+            temp = float(status["temperature"])
+            if temp > self.temperature_too_hot:
+                self.report_status(f'DVL is too hot ({temp} C). Please cool it down.')
+                self.mav.send_statustext(f'DVL is too hot ({temp} C). Please cool it down.')
+        except Exception as e:
+            self.debug(e)
+
     def run(self):
         """
         Runs the main routing
@@ -433,5 +451,5 @@ class DvlDriver (threading.Thread):
 
             if data["type"] == "position_local":
                 self.handle_position_local(data)
-
+            self.check_temperature()
             time.sleep(0.003)

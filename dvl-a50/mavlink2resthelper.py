@@ -170,7 +170,24 @@ class Mavlink2RestHelper:
   }}
 }}
 """
-
+        self.statustext_template = """
+{{
+  "header": {{
+    "system_id": 1,
+    "component_id": 1,
+    "sequence": 0
+  }},
+  "message": {{
+    "type": "STATUSTEXT",
+    "severity": {{
+      "type": "{0}"
+    }},
+    "text": {1},
+    "id": 0,
+    "chunk_seq": 0
+  }}
+}}
+"""
     def get_float(self, path: str, vehicle: Optional[int]=None, component: Optional[int]=None) -> float:
         """
         Helper to get mavlink data from mavlink2rest.
@@ -277,6 +294,19 @@ class Mavlink2RestHelper:
             return result.status_code == 200
         except Exception as error:
             print("Error setting parameter: " + str(error))
+            return False
+
+
+    def send_statustext(self, text:str, severity: str = "MAV_SEVERITY_EMERGENCY"):
+        """
+        Sends STATUSTEXT message to the GCS
+        """
+        try:
+            data = self.statustext_template.format(severity, str([i for i in text]).replace("'",'"'))
+            result = requests.post(MAVLINK2REST_URL + '/mavlink', json=json.loads(data))
+            return result.status_code == 200
+        except Exception as error:
+            print("Error sending STATUSTEXT: " + str(error))
             return False
 
     def send_vision(self, position_deltas, rotation_deltas=[0, 0, 0], confidence=100, dt=125000):
