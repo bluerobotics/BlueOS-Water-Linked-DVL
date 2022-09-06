@@ -77,7 +77,7 @@ class Mavlink2RestHelper:
   }}
 }}"""
 
-        self.vision_position_estimate_template = """
+        self.global_vision_position_estimate_template = """
 {{
   "header": {{
     "system_id": 255,
@@ -85,7 +85,7 @@ class Mavlink2RestHelper:
     "sequence": 0
   }},
   "message": {{
-    "type": "VISION_POSITION_ESTIMATE",
+    "type": "GLOBAL_VISION_POSITION_ESTIMATE",
     "usec": {us},
     "x": {x},
     "y": {y},
@@ -324,8 +324,8 @@ class Mavlink2RestHelper:
         post(MAVLINK2REST_URL + '/mavlink', data=data)
 
     def send_vision_speed_estimate(self, speed_estimates):
-        "Sends message VISION_SPEED_ESTIMATE to flight controller"
-        data = self.vision_speed_estimate_template.format(
+        "Sends message GLOBAL_VISION_SPEED_ESTIMATE to flight controller"
+        data = self.global_vision_speed_estimate_template.format(
                                   us=int((time.time()-self.start_time)*1e6),
                                   vx=speed_estimates[0],
                                   vy=speed_estimates[1],
