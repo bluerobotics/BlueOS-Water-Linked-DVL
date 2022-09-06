@@ -1,6 +1,7 @@
 import urllib
 import requests
 import json
+from loguru import logger
 
 
 def request(url):
@@ -10,7 +11,7 @@ def request(url):
     try:
         return urllib.request.urlopen(url, timeout=1).read().decode()
     except Exception as error:
-        print("Error in request: {0}: {1}".format(url, error))
+        logger.warning("Error in request: {0}: {1}".format(url, error))
         return None
 
 
@@ -29,7 +30,6 @@ def post(url, data):
             return response.read()
 
     except Exception as error:
-        print("Error in request: {0}: {1}".format(url, error))
-        print(error)
-        print(data)
+        logger.warning(f"Error in request: {url}: {error}")
+        logger.warning(data)
         return None
