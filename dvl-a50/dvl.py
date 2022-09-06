@@ -192,7 +192,11 @@ class DvlDriver (threading.Thread):
     def has_origin_set(self) -> bool:
         try:
             old_time = self.mav.get_float("/GPS_GLOBAL_ORIGIN/message/time_usec")
-        except:
+            if old_time == float('nan'):
+                logger.warning("Unable to read current time for GPS_GLOBAL_ORIGIN, using 0")
+                old_time = 0
+        except Exception as e:
+            logger.warning(f"Unable to read current time for GPS_GLOBAL_ORIGIN, using 0: {e}")
             old_time = 0
 
         for attempt in range(5):
