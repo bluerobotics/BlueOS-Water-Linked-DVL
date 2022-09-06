@@ -4,6 +4,7 @@ import json
 import time
 from math import radians
 from typing import Any, Optional
+from loguru import logger
 
 MAVLINK2REST_URL = "http://127.0.0.1/mavlink2rest"
 GPS_GLOBAL_ORIGIN_ID = 49
@@ -293,7 +294,7 @@ class Mavlink2RestHelper:
             result = requests.post(MAVLINK2REST_URL + '/mavlink', json=data)
             return result.status_code == 200
         except Exception as error:
-            print("Error setting parameter: " + str(error))
+            logger.warning("fError setting parameter '{param_name}': {error}")
             return False
 
 
@@ -306,7 +307,7 @@ class Mavlink2RestHelper:
             result = requests.post(MAVLINK2REST_URL + '/mavlink', json=json.loads(data))
             return result.status_code == 200
         except Exception as error:
-            print("Error sending STATUSTEXT: " + str(error))
+            logger.warning("Error sending STATUSTEXT: " + str(error))
             return False
 
     def send_vision(self, position_deltas, rotation_deltas=[0, 0, 0], confidence=100, dt=125000):
@@ -343,7 +344,7 @@ class Mavlink2RestHelper:
                                   y=position_estimates[1],
                                   z=position_estimates[2],
                                   reset_counter=reset_counter)
-        print(post(MAVLINK2REST_URL + '/mavlink', data=data))
+        logger.info(post(MAVLINK2REST_URL + '/mavlink', data=data))
 
     def send_rangefinder(self, distance: float):
         "Sends message DISTANCE_SENSOR to flight controller"

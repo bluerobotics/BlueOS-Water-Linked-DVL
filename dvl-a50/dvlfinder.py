@@ -10,7 +10,7 @@ def check_for_proper_dvl(ip: str) -> bool:
   try:
     return "DVL" in json.loads(request(url))["product_name"]
   except Exception as e:
-    print(f"{ip} is not a dvl: {e}")
+    logger.debug(f"{ip} is not a dvl: {e}")
     return False
   json.loads(request(url))
 
@@ -35,7 +35,7 @@ def find_the_dvl() -> Optional[str]:
         current_ips.append(entry["ip"])
 
     scans = get_ips_wildcards(current_ips)
-    printf(f"Scanning: {scans} for DVLs")
+    logger.info(f"Scanning: {scans} for DVLs")
     candidates = []
     for ip in scans:
       results = nmap.scan_top_ports(ip, args="-p 80 --open")
@@ -46,10 +46,10 @@ def find_the_dvl() -> Optional[str]:
           continue
         candidates.append(result)
 
-    print(f"candidates for being a dvl: {candidates}")
+    logger.info(f"candidates for being a dvl: {candidates}")
 
     for candidate in candidates:
       if check_for_proper_dvl(candidate):
-        print(f"DVL found at {candidate}")
+        logger.info(f"DVL found at {candidate}")
         return candidate
     return None

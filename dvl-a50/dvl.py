@@ -12,6 +12,7 @@ import math
 import os
 from enum import Enum
 from dvlfinder import find_the_dvl
+from loguru import logger
 
 from typing import Any, List, Dict
 
@@ -60,9 +61,9 @@ class DvlDriver (threading.Thread):
         threading.Thread.__init__(self)
         self.current_orientation = orientation
 
-    def debug(self, msg: str) -> None:
+    def report_status(self, msg: str) -> None:
         self.status = msg
-        print(msg)
+        logger.debug(msg)
 
     def load_settings(self) -> None:
         """
@@ -77,14 +78,14 @@ class DvlDriver (threading.Thread):
                 self.origin = data["origin"]
                 self.rangefinder = data["rangefinder"]
                 self.should_send = data["should_send"]
-                print("Loaded settings: ", data)
+                logger.debug("Loaded settings: ", data)
         except FileNotFoundError:
-            print("Settings file not found, using default.")
+            logger.warning("Settings file not found, using default.")
         except ValueError:
-            print("File corrupted, using default settings.")
+            logger.warning("File corrupted, using default settings.")
         except KeyError as error:
-            print("key not found: ", error)
-            print("using default instead")
+            logger.warning("key not found: ", error)
+            logger.warning("using default instead")
 
 
     def save_settings(self) -> None:
@@ -140,10 +141,10 @@ class DvlDriver (threading.Thread):
         self.status = f"Trying to talk to dvl at http://{ip}/api/v1/about"
         while not self.version:
             if not request(f"http://{ip}/api/v1/about"):
-                self.debug(f"could not talk to dvl at {ip}, looking for it in the local network...")
+                self.report_status(f"could not talk to dvl at {ip}, looking for it in the local network...")
             found_dvl = find_the_dvl()
             if found_dvl:
-                self.debug(f"Dvl found at address {found_dvl}, using it instead.")
+                self.report_status(f"Dvl found at address {found_dvl}, using it instead.")
                 self.hostname = found_dvl
                 return
             time.sleep(1)
@@ -152,7 +153,7 @@ class DvlDriver (threading.Thread):
         """
         Waits for a valid heartbeat to Mavlink2Rest
         """
-        self.status = "Waiting for vehicle..."
+        self.report_status("Waiting for vehicle...")
         while not self.mav.get("/HEARTBEAT"):
             time.sleep(1)
 
@@ -194,8 +195,8 @@ class DvlDriver (threading.Thread):
         except:
             old_time = 0
 
-        for _try in range(5):
-            print(f"trying to read origin, try # {_try}")
+        for attempt in range(5):
+            logger.debug(f"Trying to read origin, try # {attempt}")
             self.mav.request_message(GPS_GLOBAL_ORIGIN_ID)
             time.sleep(0.5) # make this a timeout?
             try:
@@ -206,7 +207,7 @@ class DvlDriver (threading.Thread):
                 else:
                     continue # try again
             except Exception as e:
-                print(e)
+                logger.warning(e)
                 return False
         return False
 
@@ -216,10 +217,10 @@ class DvlDriver (threading.Thread):
         """
         # If origin has never been set, set it
         if not self.has_origin_set():
-            print("trying to set origin")
+            logger.info("Origin was never set, trying to set it.")
             self.set_gps_origin(lat, lon)
         else:
-            print("not trying to set origin")
+            logger.info("Origin has already been set, sending POSITION_ESTIMATE instead")
             # if we already have an origin set, send a new position instead
             x, y = self.lat_lng_to_NE_XY_cm(lat, lon)
             depth = float(self.mav.get("/VFR_HUD/message/alt"))
@@ -261,7 +262,7 @@ class DvlDriver (threading.Thread):
         Sets up mavlink streamrates so we have the needed messages at the
         appropriate rates
         """
-        self.status = "Setting up MAVLink streams..."
+        self.report_status("Setting up MAVLink streams...")
         self.mav.ensure_message_frequency('ATTITUDE', 30, 5)
 
     def setup_params(self) -> None:
@@ -294,7 +295,7 @@ class DvlDriver (threading.Thread):
             except socket.error:
                 time.sleep(0.1)
             timeout -= 1
-        self.status = f"Setup connection to {self.host}:{self.port} timed out"
+        self.report_status(f"Setup connection to {self.host}:{self.port} timed out")
         return False
 
     def reconnect(self):
@@ -303,7 +304,7 @@ class DvlDriver (threading.Thread):
                 self.socket.shutdown(socket.SHUT_RDWR)
                 self.socket.close()
             except Exception as e:
-                self.debug(f"unable to reconnect: {e}, looking for dvl again...")
+                self.report_status(f"Unable to reconnect: {e}, looking for dvl again...")
                 self.look_for_dvl()
         success = self.setup_connections()
         if success:
@@ -336,7 +337,7 @@ class DvlDriver (threading.Thread):
             self.mav.send_rangefinder(alt)
 
         if not valid:
-            print("invalid reading, ignoring it.")
+            logger.info("Invalid  dvl reading, ignoring it.")
             return
 
         if self.should_send == MessageType.POSITION_DELTA:
@@ -379,7 +380,7 @@ class DvlDriver (threading.Thread):
                 self.report_status(f'DVL is too hot ({temp} C). Please cool it down.')
                 self.mav.send_statustext(f'DVL is too hot ({temp} C). Please cool it down.')
         except Exception as e:
-            self.debug(e)
+            self.report_status(e)
 
     def run(self):
         """
@@ -392,8 +393,7 @@ class DvlDriver (threading.Thread):
         self.setup_mavlink()
         self.setup_params()
         time.sleep(1)
-        #self.set_gps_origin(*self.origin)
-        self.status = "Running"
+        self.report_status("Running")
         self.last_recv_time = time.time()
         buf = ""
         connected = True
@@ -412,10 +412,10 @@ class DvlDriver (threading.Thread):
                         self.last_recv_time = time.time()
                         buf += recv
                 except socket.error as e:
-                    print("Disconnected")
+                    logger.warning("Disconnected")
                     connected = False
                 except Exception as e:
-                    print("Error receiveing:", e)
+                    logger.warning("Error receiveing:", e)
                     pass
 
             # Extract 1 complete line from the buffer if available
@@ -427,7 +427,7 @@ class DvlDriver (threading.Thread):
 
             if not connected:
                 buf = ""
-                self.status = "restarting"
+                self.report_status("restarting")
                 dis = self.reconnect()
                 time.sleep(0.003)
                 continue
@@ -435,7 +435,7 @@ class DvlDriver (threading.Thread):
             if not data:
                 if time.time() - self.last_recv_time > self.timeout:
                     buf = ""
-                    self.status = "timeout, restarting"
+                    self.report_status("timeout, restarting")
                     connected = self.reconnect()
                 time.sleep(0.003)
                 continue
