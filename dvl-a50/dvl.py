@@ -137,6 +137,7 @@ class DvlDriver (threading.Thread):
         """
         Waits for the dvl to show up at the designated hostname
         """
+        self.wait_for_cable_guy()
         ip = self.hostname
         self.status = f"Trying to talk to dvl at http://{ip}/api/v1/about"
         while not self.version:
@@ -147,6 +148,12 @@ class DvlDriver (threading.Thread):
                 self.report_status(f"Dvl found at address {found_dvl}, using it instead.")
                 self.hostname = found_dvl
                 return
+            time.sleep(1)
+
+    def wait_for_cable_guy(self):
+        is_online = False
+        while not request("http://127.0.0.1/cable-guy/v1.0/ethernet"):
+            self.report_status("waiting for cable-guy to come online...")
             time.sleep(1)
 
     def wait_for_vehicle(self):
