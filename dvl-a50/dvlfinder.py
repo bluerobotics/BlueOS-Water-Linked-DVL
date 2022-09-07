@@ -15,9 +15,7 @@ def check_for_proper_dvl(ip: str) -> bool:
   json.loads(request(url))
 
 def get_ips_wildcards(ips: List[str]):
-    """
-    Takes a list of ip strings and replaces the last field with * for it to be used by nmap
-    """
+    # Takes a list of ip strings and replaces the last field with * for it to be used by nmap
     return ['.'.join([*(ip.split('.')[0:-1]),'*']) for ip in ips]
 
 def find_the_dvl() -> Optional[str]:
