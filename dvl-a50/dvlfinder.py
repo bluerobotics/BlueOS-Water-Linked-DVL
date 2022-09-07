@@ -1,5 +1,6 @@
 import json
 import nmap3
+import time
 from blueoshelper import request
 from typing import List, Optional
 from loguru import logger
@@ -36,7 +37,13 @@ def find_the_dvl() -> Optional[str]:
     logger.info(f"Scanning: {scans} for DVLs")
     candidates = []
     for ip in scans:
-      results = nmap.scan_top_ports(ip, args="-p 80 --open")
+      results = []
+      while not results:
+        try:
+          results = nmap.scan_top_ports(ip, args="-p 80 --open")
+        except nmap3.exceptions.NmapExecutionError as e:
+          logger.debug(f"error running nmap: {e}, trying again in 1 second")
+          time.sleep(1)
       for result in results:
         if result in current_ips:
           continue
