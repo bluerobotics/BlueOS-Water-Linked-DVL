@@ -464,3 +464,4 @@ class DvlDriver (threading.Thread):
                 self.handle_position_local(data)
             self.check_temperature()
             time.sleep(0.003)
+        logger.error("Driver Quit! This should not happen.")
