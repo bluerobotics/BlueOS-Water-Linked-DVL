@@ -1,7 +1,5 @@
-import json
 import urllib
 
-import requests
 from loguru import logger
 
 
@@ -12,7 +10,7 @@ def request(url):
     try:
         return urllib.request.urlopen(url, timeout=1).read().decode()
     except Exception as error:
-        logger.warning("Error in request: {0}: {1}".format(url, error))
+        logger.warning(f"Error in request: {url}: {error}")
         return None
 
 

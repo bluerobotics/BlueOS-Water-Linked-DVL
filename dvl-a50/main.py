@@ -5,9 +5,9 @@ Driver for the Waterlinked DVL A-50
 
 import json
 
-from flask import Flask, request, send_from_directory
+from flask import Flask
 
-from dvl import DvlDriver, MessageType
+from dvl import DvlDriver
 
 # set the project root directory as the static folder, you can set others.
 app = Flask(__name__, static_url_path="/static", static_folder="static")
@@ -69,8 +69,8 @@ class API:
 
 
 if __name__ == "__main__":
-    dvl = DvlDriver()
-    api = API(dvl)
+    driver = DvlDriver()
+    api = API(driver)
 
     @app.route("/get_status")
     def get_status():
@@ -104,5 +104,5 @@ if __name__ == "__main__":
     def root():
         return app.send_static_file("index.html")
 
-    dvl.start()
+    driver.start()
     app.run(host="0.0.0.0", port=9001)

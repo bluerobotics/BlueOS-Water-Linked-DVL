@@ -14,7 +14,7 @@ GPS_GLOBAL_ORIGIN_ID = 49
 # holds the last status so we dont flood it
 last_status = ""
 
-
+# pylint: disable=too-many-instance-attributes
 class Mavlink2RestHelper:
     """
     Responsible for interfacing with Mavlink2Rest
@@ -235,7 +235,7 @@ class Mavlink2RestHelper:
             if new_message_counter > first_message_counter:
                 break
             if (time.time() - t0) > timeout:
-                raise FetchUpdatedMessageFail(f"Did not receive an updated {message_name} before timeout.")
+                raise Exception(f"Did not receive an updated {message_name} before timeout.")
             time.sleep(timeout / 10.0)
 
         return new_message
@@ -245,7 +245,7 @@ class Mavlink2RestHelper:
         Returns the frequency at which message "message_name" is being received, 0 if unavailable
         """
         try:
-            return self.get_float("/{0}/message_information/frequency".format(message_name))
+            return self.get_float(f"/{message_name}/message_information/frequency")
         except ValueError:
             return 0
 
@@ -258,12 +258,11 @@ class Mavlink2RestHelper:
         Returns true if successful, false otherwise
         """
         message_name = message_name.upper()
-        current_frequency = self.get_message_frequency(message_name)
-
         # load message template from mavlink2rest helper
         try:
             data = json.loads(requests.get(MAVLINK2REST_URL + "/helper/mavlink?name=COMMAND_LONG").text)
-        except:
+        except Exception as error:
+            logger.info(f"unable to get mavlink template for {message_name} from Mavlink2rest: {error}")
             return False
 
         # msg_id = getattr(mavutil.mavlink, 'MAVLINK_MSG_ID_' + message_name)
@@ -275,7 +274,7 @@ class Mavlink2RestHelper:
             result = requests.post(MAVLINK2REST_URL + "/mavlink", json=data)
             return result.status_code == 200
         except Exception as error:
-            report_status("Error setting message frequency: " + str(error))
+            logger.warning("Error setting message frequency: " + str(error))
             return False
 
     def set_param(self, param_name, param_type, param_value):
@@ -295,7 +294,7 @@ class Mavlink2RestHelper:
             result = requests.post(MAVLINK2REST_URL + "/mavlink", json=data)
             return result.status_code == 200
         except Exception as error:
-            logger.warning("fError setting parameter '{param_name}': {error}")
+            logger.warning(f"Error setting parameter '{param_name}': {error}")
             return False
 
     def send_statustext(self, text: str, severity: str = "MAV_SEVERITY_EMERGENCY"):
@@ -303,14 +302,14 @@ class Mavlink2RestHelper:
         Sends STATUSTEXT message to the GCS
         """
         try:
-            data = self.statustext_template.format(severity, str([i for i in text]).replace("'", '"'))
+            data = self.statustext_template.format(severity, str(list(text)).replace("'", '"'))
             result = requests.post(MAVLINK2REST_URL + "/mavlink", json=json.loads(data))
             return result.status_code == 200
         except Exception as error:
             logger.warning("Error sending STATUSTEXT: " + str(error))
             return False
 
-    def send_vision(self, position_deltas, rotation_deltas=[0, 0, 0], confidence=100, dt=125000):
+    def send_vision(self, position_deltas, rotation_deltas=(0, 0, 0), confidence=100, dt=125000):
         "Sends message VISION_POSITION_DELTA to flight controller"
         data = self.vision_template.format(
             dt=int(dt),
@@ -337,7 +336,7 @@ class Mavlink2RestHelper:
         post(MAVLINK2REST_URL + "/mavlink", data=data)
 
     def send_vision_position_estimate(
-        self, timestamp, position_estimates, attitude_estimates=[0.0, 0.0, 0.0], reset_counter=0
+        self, timestamp, position_estimates, attitude_estimates=(0.0, 0.0, 0.0), reset_counter=0
     ):
         "Sends message GLOBAL_VISION_POSITION_ESTIMATE to flight controller"
         data = self.global_vision_position_estimate_template.format(
@@ -377,7 +376,8 @@ class Mavlink2RestHelper:
         # load message template from mavlink2rest helper
         try:
             data = json.loads(requests.get(MAVLINK2REST_URL + "/helper/mavlink?name=COMMAND_LONG").text)
-        except:
+        except Exception as error:
+            logger.warning(f"Unable to request message {msg_id}: {error}")
             return False
 
         data["message"]["command"] = {"type": "MAV_CMD_REQUEST_MESSAGE"}
@@ -387,5 +387,5 @@ class Mavlink2RestHelper:
             result = requests.post(MAVLINK2REST_URL + "/mavlink", json=data)
             return result.status_code == 200
         except Exception as error:
-            report_status("Error requesting message: " + str(error))
+            logger.warning(f"Error requesting message: {error}")
             return False
