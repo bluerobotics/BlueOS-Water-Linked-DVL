@@ -1,6 +1,7 @@
-import urllib
-import requests
 import json
+import urllib
+
+import requests
 from loguru import logger
 
 
@@ -22,9 +23,9 @@ def post(url, data):
     """
     try:
         jsondata = data
-        jsondataasbytes = jsondata.encode('ascii')  # data should be bytes
+        jsondataasbytes = jsondata.encode("ascii")  # data should be bytes
         req = urllib.request.Request(url, data)
-        req.add_header('Content-Type', 'application/json')
+        req.add_header("Content-Type", "application/json")
 
         with urllib.request.urlopen(req, jsondataasbytes) as response:
             return response.read()
