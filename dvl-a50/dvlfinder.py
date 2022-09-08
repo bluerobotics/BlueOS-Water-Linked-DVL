@@ -52,7 +52,7 @@ def find_the_dvl() -> Optional[str]:
         for result in results:
             if result in current_ips:
                 continue
-            if result == "runtime" or result == "stats":
+            if result in ("runtime", "stats"):
                 continue
             candidates.append(result)
 

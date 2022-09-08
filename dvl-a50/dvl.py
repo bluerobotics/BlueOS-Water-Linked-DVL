@@ -28,10 +28,15 @@ class MessageType(str, Enum):
     POSITION_ESTIMATE = "POSITION_ESTIMATE"
     SPEED_ESTIMATE = "SPEED_ESTIMATE"
 
+    @staticmethod
     def contains(value):
         return value in set(item.value for item in MessageType)
 
 
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=unspecified-encoding
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-statements
 class DvlDriver(threading.Thread):
     """
     Responsible for the DVL interactions themselves.
@@ -157,7 +162,6 @@ class DvlDriver(threading.Thread):
             time.sleep(1)
 
     def wait_for_cable_guy(self):
-        is_online = False
         while not request("http://127.0.0.1/cable-guy/v1.0/ethernet"):
             self.report_status("waiting for cable-guy to come online...")
             time.sleep(1)
@@ -205,7 +209,7 @@ class DvlDriver(threading.Thread):
     def has_origin_set(self) -> bool:
         try:
             old_time = self.mav.get_float("/GPS_GLOBAL_ORIGIN/message/time_usec")
-            if old_time == float("nan"):
+            if math.isnan(old_time):
                 logger.warning("Unable to read current time for GPS_GLOBAL_ORIGIN, using 0")
                 old_time = 0
         except Exception as e:
@@ -221,8 +225,7 @@ class DvlDriver(threading.Thread):
                 if new_origin_data["time_usec"] != old_time:
                     self.origin = [new_origin_data["latitude"] * 1e-7, new_origin_data["longitude"] * 1e-7]
                     return True
-                else:
-                    continue  # try again
+                continue  # try again
             except Exception as e:
                 logger.warning(e)
                 return False
@@ -429,11 +432,10 @@ class DvlDriver(threading.Thread):
                         self.last_recv_time = time.time()
                         buf += recv
                 except socket.error as e:
-                    logger.warning("Disconnected")
+                    logger.warning(f"Disconnected: {e}")
                     connected = False
                 except Exception as e:
-                    logger.warning("Error receiveing:", e)
-                    pass
+                    logger.warning(f"Error receiving: {e}")
 
             # Extract 1 complete line from the buffer if available
             if len(buf) > 0:
@@ -445,7 +447,7 @@ class DvlDriver(threading.Thread):
             if not connected:
                 buf = ""
                 self.report_status("restarting")
-                dis = self.reconnect()
+                self.reconnect()
                 time.sleep(0.003)
                 continue
 
