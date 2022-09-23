@@ -48,7 +48,6 @@ class DvlDriver(threading.Thread):
     mav = Mavlink2RestHelper()
     socket = None
     port = 16171  # Waterlinked mentioned they won't allow changing or disabling this
-    last_attitude = (0, 0, 0)  # used for calculating the attitude delta
     current_orientation = DVL_DOWN
     enabled = True
     rangefinder = True
@@ -67,6 +66,9 @@ class DvlDriver(threading.Thread):
     def __init__(self, orientation=DVL_DOWN) -> None:
         threading.Thread.__init__(self)
         self.current_orientation = orientation
+        # used for calculating attitude delta
+        self.last_attitude = (0, 0, 0)
+        self.current_attitude = (0, 0, 0)
 
     def report_status(self, msg: str) -> None:
         self.status = msg
@@ -336,7 +338,6 @@ class DvlDriver(threading.Thread):
         return False
 
     def handle_velocity(self, data: Dict[str, Any]) -> None:
-        # TODO: test if this is used by ArduSub or could be [0, 0, 0]
         # extract velocity data from the DVL JSON
 
         vx, vy, vz, alt, valid, fom = (
@@ -358,9 +359,6 @@ class DvlDriver(threading.Thread):
         confidence = 100 * (1 - min(_fom_max, fom) / _fom_max) if valid else 0
         # confidence = 100 if valid else 0
 
-        # feeding back the angles seemed to aggravate the gyro drift issue
-        angles = [0, 0, 0]
-
         if self.rangefinder:
             self.mav.send_rangefinder(alt)
 
@@ -369,22 +367,32 @@ class DvlDriver(threading.Thread):
             return
 
         if self.should_send == MessageType.POSITION_DELTA:
+            dRoll, dPitch, dYaw = [
+                current_angle - last_angle
+                for (current_angle, last_angle) in zip(self.current_attitude, self.last_attitude)
+            ]
             if self.current_orientation == DVL_DOWN:
-                self.mav.send_vision([dx, dy, dz], angles, dt=data["time"] * 1e3, confidence=confidence)
+                position_delta = [dx, dy, dz]
+                attitude_delta = [dRoll, dPitch, dYaw]
             elif self.current_orientation == DVL_FORWARD:
-                self.mav.send_vision([dz, dy, -dx], angles, dt=data["time"] * 1e3, confidence=confidence)
+                position_delta = [dz, dy, -dx]
+                attitude_delta = [dYaw, dPitch, -dRoll]
+            self.mav.send_vision(position_delta, attitude_delta, dt=data["time"] * 1e3, confidence=confidence)
         elif self.should_send == MessageType.SPEED_ESTIMATE:
             if self.current_orientation == DVL_DOWN:
                 self.mav.send_vision_speed_estimate([vx, vy, vz])
             elif self.current_orientation == DVL_FORWARD:
                 self.mav.send_vision_speed_estimate([vz, vy, -vx])
 
+        self.last_attitude = self.current_attitude
+
     def handle_position_local(self, data):
+        self.current_attitude = data["roll"], data["pitch"], data["yaw"]
         if self.should_send == MessageType.POSITION_ESTIMATE:
-            x, y, z, roll, pitch, yaw = data["x"], data["y"], data["z"], data["roll"], data["pitch"], data["yaw"]
+            x, y, z = data["x"], data["y"], data["z"]
             self.timestamp = data["ts"]
             self.mav.send_vision_position_estimate(
-                self.timestamp, [x, y, z], [roll, pitch, yaw], reset_counter=self.reset_counter
+                self.timestamp, [x, y, z], self.current_attitude, reset_counter=self.reset_counter
             )
 
     def check_temperature(self):
