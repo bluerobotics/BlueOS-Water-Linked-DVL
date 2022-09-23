@@ -339,7 +339,6 @@ class DvlDriver(threading.Thread):
 
     def handle_velocity(self, data: Dict[str, Any]) -> None:
         # extract velocity data from the DVL JSON
-
         vx, vy, vz, alt, valid, fom = (
             data["vx"],
             data["vy"],
@@ -379,10 +378,8 @@ class DvlDriver(threading.Thread):
                 attitude_delta = [dYaw, dPitch, -dRoll]
             self.mav.send_vision(position_delta, attitude_delta, dt=data["time"] * 1e3, confidence=confidence)
         elif self.should_send == MessageType.SPEED_ESTIMATE:
-            if self.current_orientation == DVL_DOWN:
-                self.mav.send_vision_speed_estimate([vx, vy, vz])
-            elif self.current_orientation == DVL_FORWARD:
-                self.mav.send_vision_speed_estimate([vz, vy, -vx])
+            velocity = [vx, vy, vz] if self.current_orientation == DVL_DOWN else [vz, vy, -vx]  # DVL_FORWARD
+            self.mav.send_vision_speed_estimate(velocity)
 
         self.last_attitude = self.current_attitude
 
@@ -430,6 +427,7 @@ class DvlDriver(threading.Thread):
                 time.sleep(1)
                 buf = ""  # Reset buf when disabled
                 continue
+
             r, _, _ = select([self.socket], [], [], 0)
             data = None
             if r:
@@ -473,11 +471,10 @@ class DvlDriver(threading.Thread):
                 continue
 
             if data["type"] == "velocity":
-
                 self.handle_velocity(data)
-
-            if data["type"] == "position_local":
+            elif data["type"] == "position_local":
                 self.handle_position_local(data)
+
             self.check_temperature()
             time.sleep(0.003)
         logger.error("Driver Quit! This should not happen.")
