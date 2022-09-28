@@ -35,6 +35,7 @@ profile = "black"
         "suppressed-message",
         "too-few-public-methods", # We know what kind of architecture we want
         "too-many-public-methods", # Wrappers will have multiple public methods
+        "too-many-locals",
         "useless-super-delegation", # Fails to check it properly
         "wildcard-import", # Necessary to locate installed plugins
         "wrong-import-position",
