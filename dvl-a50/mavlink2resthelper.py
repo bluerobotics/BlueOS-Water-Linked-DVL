@@ -151,7 +151,7 @@ class Mavlink2RestHelper:
     "type": "DISTANCE_SENSOR",
     "time_boot_ms": 0,
     "min_distance": 0,
-    "max_distance": 5000,
+    "max_distance": 10000,
     "current_distance": {0},
     "mavtype": {{
       "type": "MAV_DISTANCE_SENSOR_LASER"
