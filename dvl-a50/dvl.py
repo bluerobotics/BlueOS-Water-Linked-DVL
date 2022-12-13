@@ -358,12 +358,12 @@ class DvlDriver(threading.Thread):
         confidence = 100 * (1 - min(_fom_max, fom) / _fom_max) if valid else 0
         # confidence = 100 if valid else 0
 
-        if self.rangefinder:
-            self.mav.send_rangefinder(alt)
-
         if not valid:
             logger.info("Invalid  dvl reading, ignoring it.")
             return
+
+        if self.rangefinder:
+            self.mav.send_rangefinder(alt)
 
         if self.should_send == MessageType.POSITION_DELTA:
             dRoll, dPitch, dYaw = [
