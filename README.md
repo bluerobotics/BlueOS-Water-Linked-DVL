@@ -7,6 +7,8 @@
 
 This is a docker implementation of a Waterlinked DVL-a50 driver for the new Blue Robotics BlueOS.
 
-To set this up, install it from [BlueOS extensions tab](https://docs.bluerobotics.com/ardusub-zola/software/onboard/BlueOS-1.1/extensions/).
+## Install
+
+Install it from [BlueOS extensions tab](https://docs.bluerobotics.com/ardusub-zola/software/onboard/BlueOS-1.1/extensions/).
 
 The service will show in the "Available Services" section in BlueOS, where there are some configuration options.
