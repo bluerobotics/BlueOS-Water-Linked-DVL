@@ -1,0 +1,21 @@
+.theme--light.v-application {
+	background: #1D3556;
+	color: #EDF5FF;
+}
+
+.theme--light.v-label {
+    color: rgba(0,0,0,.87);
+}
+
+.logo {
+	float: right;
+	max-width: 300px;
+}
+
+#mapid {
+	margin-bottom:20px;
+}
+
+#btn-location {
+	float:right;
+}
