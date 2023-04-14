@@ -32,13 +32,13 @@
 					<br />
 				<v-row>
 					<v-col>
-						<v-card height="600">
+						<v-card height="650">
 							<h2>Settings</h2>
 							<v-switch v-model="this.enabled" inset :label="`Enable DVL driver`" @change="setDvlEnabled($event)"></v-switch>
 							<v-switch v-model="this.rangefinder" inset :label="`Send range data through MAVLink`" @change="setDvlAsRangefinder($event)"></v-switch>
 							<h2>Status</h2>
 							<div>
-								<textarea readonly style="width:100%;height:100%"
+								<textarea readonly style="width:100%;"
 									id="dvl-status"> {{status}} </textarea>
 							</div>
 						</v-card>
@@ -66,22 +66,19 @@
 					-->
 					<v-col
 					class="col-12 col-sm-6 col-md-8">
-						<v-card height="600">
+						<v-card height="650">
 							<h2>Set Current Location</h2>
-							<p>Use the map marker to set GPS position manually</p>
+							<p>Click on the map to set marker position manually</p>
 							<div id="mapid" style="height: 400px;"></div>
 							<v-row>
 								<v-col class="col-5">
 									<form>
-										<label for="lat"><strong>Latitude:</strong></label>
-										<input type="text" id="lat" name="lat" v-model="this.newOrigin[0]">
-										<br />
-										<label for="long"><strong>Longitude:</strong></label>
-										<input type="text" id="long" name="long" v-model="this.newOrigin[1]">
+										<v-text-field label="Latitude" id="lat" variant="outlined" v-model="this.newOrigin[0]"></v-text-field>
+										<v-text-field label="Longitude" id="long" variant="outlined" v-model="this.newOrigin[1]"></v-text-field>
 									</form>
 								</v-col>
 								<v-col class="col-7">
-									<v-btn id="btn-location" type="button" class="btn btn-primary" @click="setCurrentLocation();">Set Marker Location as Vehicle Position</v-btn>
+									<v-btn id="btn-location" type="button" class="btn btn-primary" @click="setCurrentLocation();">Set Vehicle Position</v-btn>
 								</v-col>
 							</v-row>
 						</v-card>
