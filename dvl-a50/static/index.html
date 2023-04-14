@@ -1,7 +1,7 @@
 <html>
 
 <head>
-	<title>Water Linked DVL A-50</title>
+	<title>Water Linked DVL</title>
 
 	<!-- Leaflet will only work with internet, and that is fine. -->
 	<link rel="stylesheet" href="/static/css/leaflet.css"/>
@@ -12,6 +12,7 @@
 	<link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
 	<link href="/static/css/materialdesignicons.min.css" rel="stylesheet">
 	<link href="/static/css/vuetify.min.css" rel="stylesheet">
+	<link href="/static/css/style.css" rel="stylesheet">
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
 </head>
 
@@ -25,16 +26,19 @@
 	<v-app>
 		<v-main>
 			<v-container>
-				<h1>Water Linked DVL A-50 Driver ( {{ hostname }} )</h1>
+				<img src="/static/waterlinked_logo.png" class="logo" />
+				<h1>DVL Configuration</h1>
+				<p>BlueOS Extension connecting to <a href="{{ hostname }}">{{ hostname }}</a></p>
+					<br />
 				<v-row>
 					<v-col>
 						<v-card height="600">
-							<v-switch v-model="this.enabled" inset :label="`Enable Driver`" @change="setDvlEnabled($event)"></v-switch>
-							<h2>Rangefinder:</h2>
-							<v-checkbox v-model="this.rangefinder" :label="`Use as MAVLink rangefinder`" @change="setDvlAsRangefinder($event)"></v-checkbox>
-							<h4>Status</h4>
+							<h2>Settings</h2>
+							<v-switch v-model="this.enabled" inset :label="`Enable DVL driver`" @change="setDvlEnabled($event)"></v-switch>
+							<v-switch v-model="this.rangefinder" inset :label="`Send range data through MAVLink`" @change="setDvlAsRangefinder($event)"></v-switch>
+							<h2>Status</h2>
 							<div>
-								<textarea readonly style="width:100%;"
+								<textarea readonly style="width:100%;height:100%"
 									id="dvl-status"> {{status}} </textarea>
 							</div>
 						</v-card>
@@ -63,21 +67,31 @@
 					<v-col
 					class="col-12 col-sm-6 col-md-8">
 						<v-card height="600">
-							<h3>Set Current Location</h3>
-							<div id="mapid" style="height: 450px;"></div>
-							<form>
-								<label for="lat">Latitude:</label>
-								<input type="text" id="lat" name="lat" v-model="this.newOrigin[0]">
-								<label for="long">Longitude:</label>
-								<input type="text" id="long" name="long" v-model="this.newOrigin[1]">
-							</form>
-							<v-btn type="button" class="btn btn-primary" @click="setCurrentLocation();">Set Current Location</v-btn>
+							<h2>Set Current Location</h2>
+							<p>Use the map marker to set GPS position manually</p>
+							<div id="mapid" style="height: 400px;"></div>
+							<v-row>
+								<v-col class="col-5">
+									<form>
+										<label for="lat"><strong>Latitude:</strong></label>
+										<input type="text" id="lat" name="lat" v-model="this.newOrigin[0]">
+										<br />
+										<label for="long"><strong>Longitude:</strong></label>
+										<input type="text" id="long" name="long" v-model="this.newOrigin[1]">
+									</form>
+								</v-col>
+								<v-col class="col-7">
+									<v-btn id="btn-location" type="button" class="btn btn-primary" @click="setCurrentLocation();">Set Marker Location as Vehicle Position</v-btn>
+								</v-col>
+							</v-row>
 						</v-card>
 					</v-col>
 				</v-row>
 				<v-row>
 					<v-col>
-						<v-card height="900" v-if='hostname'>
+						<v-card height="1000" v-if='hostname'>
+							<h2>Water Linked DVL Configuration Page</h2>
+							<p><a href="{{hostname}}">({{hostname}})</a></p>
 							<iframe style="width: 100%; height: 100%;" :src='`http://${hostname}`'></iframe>
 						</v-card>
 					</v-col>
