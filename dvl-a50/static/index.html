@@ -20,6 +20,12 @@
 	.v-card {
 		padding: 20px;
 	}
+	.leaflet-grab {
+   		cursor: crosshair !important;
+	}
+	.leaflet-dragging .leaflet-grab {
+   		cursor: grab !important;
+	}
 </style>
 
 <div id="app">
@@ -67,7 +73,7 @@
 					<v-col
 					class="col-12 col-sm-6 col-md-8">
 						<v-card height="650">
-							<h2>Set Current Location</h2>
+							<h2>Set Vehicle Location</h2>
 							<p>Click on the map to set marker position manually</p>
 							<div id="mapid" style="height: 400px;"></div>
 							<v-row>
