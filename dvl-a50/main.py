@@ -15,7 +15,6 @@ thread = None
 
 
 class API:
-
     dvl = None
 
     def __init__(self, dvl: DvlDriver):
