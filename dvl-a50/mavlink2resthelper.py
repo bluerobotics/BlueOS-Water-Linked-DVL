@@ -236,7 +236,7 @@ class Mavlink2RestHelper:
             if new_message_counter > first_message_counter:
                 break
             if (time.time() - t0) > timeout:
-                raise Exception(f"Did not receive an updated {message_name} before timeout.")
+                raise RuntimeError(f"Did not receive an updated {message_name} before timeout.")
             time.sleep(timeout / 10.0)
 
         return new_message

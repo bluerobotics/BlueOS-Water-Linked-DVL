@@ -188,7 +188,7 @@ class DvlDriver(threading.Thread):
 
     def set_should_send(self, should_send):
         if not MessageType.contains(should_send):
-            raise Exception(f"bad messagetype: {should_send}")
+            raise ValueError(f"bad messagetype: {should_send}")
         self.should_send = should_send
         self.save_settings()
 
