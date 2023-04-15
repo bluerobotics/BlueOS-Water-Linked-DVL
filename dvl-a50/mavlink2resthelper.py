@@ -14,6 +14,7 @@ GPS_GLOBAL_ORIGIN_ID = 49
 # holds the last status so we dont flood it
 last_status = ""
 
+
 # pylint: disable=too-many-instance-attributes
 class Mavlink2RestHelper:
     """
