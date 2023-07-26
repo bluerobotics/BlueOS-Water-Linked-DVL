@@ -2,6 +2,10 @@
 
 ## Changelog
 
+### v1.0.3
+ - Uses an random available port instead of 9001 to avoid conflict
+ - Updated menu icon
+
 ### v1.0.2
  - Improved style
 

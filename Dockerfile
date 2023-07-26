@@ -12,7 +12,19 @@ RUN cd /home/pi/dvl-a50 && pip3 install .
 LABEL version="1.0.3"
 LABEL permissions='\
 {\
-    "NetworkMode": "host"\
+ "ExposedPorts": {\
+   "9001/tcp": {}\
+  },\
+  "HostConfig": {\
+    "Binds":["/root/.config:/root/.config"],\
+    "PortBindings": {\
+      "9001/tcp": [\
+        {\
+          "HostPort": ""\
+        }\
+      ]\
+    }\
+  }\
 }'
 LABEL authors='[\
     {\
