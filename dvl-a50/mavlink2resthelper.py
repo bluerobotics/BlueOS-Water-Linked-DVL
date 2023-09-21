@@ -170,7 +170,7 @@ class Mavlink2RestHelper:
       0.0,
       0.0
     ],
-    "signal_quality": 0
+    "signal_quality": {1}
   }}
 }}
 """
@@ -352,12 +352,12 @@ class Mavlink2RestHelper:
         )
         logger.info(post(MAVLINK2REST_URL + "/mavlink", data=data))
 
-    def send_rangefinder(self, distance: float):
+    def send_rangefinder(self, distance: float, quality: float):
         "Sends message DISTANCE_SENSOR to flight controller"
         if distance == -1:
-            return
-        data = self.rangefinder_template.format(int(distance * 100))
-
+            data = self.rangefinder_template.format(0, 0)
+        else:
+            data = self.rangefinder_template.format(int(distance * 100), int(max(1, quality)))
         post(MAVLINK2REST_URL + "/mavlink", data=data)
 
     def set_gps_origin(self, lat, lon):
