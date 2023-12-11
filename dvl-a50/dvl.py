@@ -289,6 +289,7 @@ class DvlDriver(threading.Thread):
         """
         self.report_status("Setting up MAVLink streams...")
         self.mav.ensure_message_frequency("ATTITUDE", 30, 5)
+        self.mav.ensure_message_frequency("VFR_HUD", 74, 5)
 
     def setup_params(self) -> None:
         """
