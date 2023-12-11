@@ -314,9 +314,9 @@ class Mavlink2RestHelper:
         "Sends message VISION_POSITION_DELTA to flight controller"
         data = self.vision_template.format(
             dt=int(dt),
-            dRoll=rotation_deltas[0],
-            dPitch=rotation_deltas[1],
-            dYaw=rotation_deltas[2],
+            dRoll=radians(rotation_deltas[0]),
+            dPitch=radians(rotation_deltas[1]),
+            dYaw=radians(rotation_deltas[2]),
             dx=position_deltas[0],
             dy=position_deltas[1],
             dz=position_deltas[2],

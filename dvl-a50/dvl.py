@@ -248,7 +248,8 @@ class DvlDriver(threading.Thread):
             depth = float(self.mav.get("/VFR_HUD/message/alt"))
 
             attitude = json.loads(self.mav.get("/ATTITUDE/message"))
-            attitudes = [attitude["roll"], attitude["pitch"], attitude["yaw"]]
+            # code expects degrees, but the ATTITUDE message gives radians
+            attitudes = [math.degrees(attitude[axis]) for axis in ("roll", "pitch", "yaw")]
             positions = [x, y, -depth]
             self.reset_counter += 1
             self.mav.send_vision_position_estimate(
