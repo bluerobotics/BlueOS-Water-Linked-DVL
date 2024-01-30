@@ -1,0 +1,21 @@
+name: Deploy BlueOS Extension Image
+
+on:
+  push:
+  pull_request:
+  # Run manually
+  workflow_dispatch:
+  # NOTE: caches may be removed if not run weekly
+  #  -> may be worth scheduling for every 6 days
+
+jobs:
+  deploy-docker-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy BlueOS Extension
+        uses: BlueOS-community/Deploy-BlueOS-Extension@v1.0.1
+        with:
+          docker-username: ${{ secrets.DOCKER_USERNAME }}
+          docker-password: ${{ secrets.DOCKER_PASSWORD }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          image-name: 'water-linked-dvl'
