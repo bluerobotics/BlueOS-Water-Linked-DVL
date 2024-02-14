@@ -30,8 +30,8 @@ class Mavlink2RestHelper:
         self.vision_template = """
 {{
   "header": {{
-    "system_id": 255,
-    "component_id": 0,
+    "system_id": """ + str(vehicle) + """,
+    "component_id": 197,
     "sequence": 0
   }},
   "message": {{
@@ -55,8 +55,8 @@ class Mavlink2RestHelper:
         self.vision_speed_estimate_template = """
         {{
   "header": {{
-    "system_id": 255,
-    "component_id": 0,
+    "system_id": """ + str(vehicle) + """,
+    "component_id": 197,
     "sequence": 0
   }},
   "message": {{
@@ -83,8 +83,8 @@ class Mavlink2RestHelper:
         self.global_vision_position_estimate_template = """
 {{
   "header": {{
-    "system_id": 255,
-    "component_id": 0,
+    "system_id": """ + str(vehicle) + """,
+    "component_id": 197,
     "sequence": 0
   }},
   "message": {{
@@ -126,8 +126,8 @@ class Mavlink2RestHelper:
         self.gps_origin_template = """
 {{
   "header": {{
-    "system_id": 255,
-    "component_id": 0,
+    "system_id": """ + str(vehicle) + """,
+    "component_id": 197,
     "sequence": 0
   }},
   "message": {{
@@ -144,8 +144,8 @@ class Mavlink2RestHelper:
         self.rangefinder_template = """
 {{
   "header": {{
-    "system_id": 255,
-    "component_id": 0,
+    "system_id": """ + str(vehicle) + """,
+    "component_id": 197,
     "sequence": 0
   }},
   "message": {{
@@ -177,8 +177,8 @@ class Mavlink2RestHelper:
         self.statustext_template = """
 {{
   "header": {{
-    "system_id": 1,
-    "component_id": 1,
+    "system_id": """ + str(vehicle) + """,
+    "component_id": 197,
     "sequence": 0
   }},
   "message": {{
