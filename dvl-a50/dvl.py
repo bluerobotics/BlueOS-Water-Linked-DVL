@@ -63,6 +63,7 @@ class DvlDriver(threading.Thread):
     last_temperature_check_time = 0
     temperature_check_interval_s = 30
     temperature_too_hot = 45
+    confidence_cutoff = 0
 
     def __init__(self, orientation=DVL_DOWN) -> None:
         threading.Thread.__init__(self)
@@ -88,6 +89,7 @@ class DvlDriver(threading.Thread):
                 self.origin = data["origin"]
                 self.rangefinder = data["rangefinder"]
                 self.should_send = data["should_send"]
+                self.confidence_cutoff = data.get("confidence_cutoff", 80)
                 logger.debug("Loaded settings: ", data)
         except FileNotFoundError:
             logger.warning("Settings file not found, using default.")
@@ -120,6 +122,7 @@ class DvlDriver(threading.Thread):
                         "hostname": self.hostname,
                         "rangefinder": self.rangefinder,
                         "should_send": self.should_send,
+                        "confidence_cutoff": self.confidence_cutoff,
                     }
                 )
             )
@@ -136,6 +139,7 @@ class DvlDriver(threading.Thread):
             "origin": self.origin,
             "rangefinder": self.rangefinder,
             "should_send": self.should_send,
+            "confidence_cutoff": self.confidence_cutoff,
         }
 
     @property
@@ -273,6 +277,14 @@ class DvlDriver(threading.Thread):
         self.save_settings()
         return True
 
+    def set_confidence_cutoff(self, cutoff: int) -> bool:
+        """
+        Enables/disables the driver
+        """
+        self.confidence_cutoff = max(5, min(100, cutoff))
+        self.save_settings()
+        return True
+
     def set_use_as_rangefinder(self, enable: bool) -> bool:
         """
         Enables/disables DISTANCE_SENSOR messages
@@ -382,7 +394,8 @@ class DvlDriver(threading.Thread):
             return
 
         if self.rangefinder and alt > 0.05:
-            self.mav.send_rangefinder(alt, confidence)
+            if confidence >= self.confidence_cutoff:
+                self.mav.send_rangefinder(alt, confidence)
 
         position_delta = [0, 0, 0]
         attitude_delta = [0, 0, 0]
