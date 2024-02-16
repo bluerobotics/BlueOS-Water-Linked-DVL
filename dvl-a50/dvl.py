@@ -1,6 +1,7 @@
 """
 Code for integration of Waterlinked DVL A50 with Companion and ArduSub
 """
+
 import json
 import math
 import os
