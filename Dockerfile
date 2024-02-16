@@ -17,6 +17,9 @@ LABEL permissions='\
   },\
   "HostConfig": {\
     "Binds":["/root/.config:/root/.config"],\
+    "ExtraHosts": [\
+      "host.docker.internal:host-gateway"\
+    ],\
     "PortBindings": {\
       "9001/tcp": [\
         {\

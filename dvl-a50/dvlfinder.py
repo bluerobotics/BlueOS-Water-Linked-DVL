@@ -30,7 +30,7 @@ def find_the_dvl() -> Optional[str]:
 
     nmap = nmap3.Nmap()
     # generate the scan mask from our current ips
-    networks = json.loads(request("http://127.0.0.1/cable-guy/v1.0/ethernet"))
+    networks = json.loads(request("http://host.docker.internal/cable-guy/v1.0/ethernet"))
     current_networks = [network["addresses"] for network in networks]
     # this looks like [{'ip': '192.168.2.2', 'mode': 'server'}]
     current_ips = []
