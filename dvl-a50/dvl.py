@@ -164,7 +164,7 @@ class DvlDriver(threading.Thread):
             time.sleep(1)
 
     def wait_for_cable_guy(self):
-        while not request("http://127.0.0.1/cable-guy/v1.0/ethernet"):
+        while not request("http://host.docker.internal/cable-guy/v1.0/ethernet"):
             self.report_status("waiting for cable-guy to come online...")
             time.sleep(1)
 
