@@ -3,7 +3,7 @@
     "description":"Driver for Waterlinked's DVL A50",
     "icon":"mdi-dots-vertical",
     "company":"Blue Robotics",
-    "version":"1.0.3",
+    "version":"1.0.4",
     "webpage":"https://github.com/bluerobotics/BlueOS-Water-Linked-DVL",
     "api":""
  }

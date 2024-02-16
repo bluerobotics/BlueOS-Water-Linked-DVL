@@ -9,7 +9,7 @@ RUN mkdir -p /home/pi
 COPY dvl-a50 /home/pi/dvl-a50
 RUN cd /home/pi/dvl-a50 && pip3 install .
 
-LABEL version="1.0.3"
+LABEL version="1.0.4"
 LABEL permissions='\
 {\
  "ExposedPorts": {\

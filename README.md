@@ -2,6 +2,9 @@
 
 ## Changelog
 
+### v1.0.4
+ - Fix issue introduced in v1.0.3 where the extension was unable to talk to Cable-guy
+
 ### v1.0.3
  - Uses an random available port instead of 9001 to avoid conflict
  - Updated menu icon
