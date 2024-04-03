@@ -1,6 +1,6 @@
 {
-    "name":"DVL A50",
-    "description":"Driver for Waterlinked's DVL A50",
+    "name":"Waterlinked DVL",
+    "description":"Driver for Waterlinked's DVL",
     "icon":"mdi-dots-vertical",
     "company":"Blue Robotics",
     "version":"1.0.4",

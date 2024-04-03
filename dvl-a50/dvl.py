@@ -1,5 +1,5 @@
 """
-Code for integration of Waterlinked DVL A50 with Companion and ArduSub
+Code for integration of Waterlinked DVL A50/A125 with Companion and ArduSub
 """
 
 import json
