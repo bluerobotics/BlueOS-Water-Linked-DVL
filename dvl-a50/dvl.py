@@ -1,5 +1,5 @@
 """
-Code for integration of Waterlinked DVL A50/A125 with Companion and ArduSub
+Code for integration of Water Linked DVL A50/A125 with Companion and ArduSub
 """
 
 import json
@@ -48,7 +48,7 @@ class DvlDriver(threading.Thread):
     version = ""
     mav = Mavlink2RestHelper()
     socket = None
-    port = 16171  # Waterlinked mentioned they won't allow changing or disabling this
+    port = 16171  # Water Linked mentioned they won't allow changing or disabling this
     current_orientation = DVL_DOWN
     enabled = True
     rangefinder = True
