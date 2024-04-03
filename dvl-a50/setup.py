@@ -12,7 +12,7 @@ if not os.environ.get("PYTHONHTTPSVERIFY", "") and getattr(ssl, "_create_unverif
 setup(
     name="dvl_service",
     version="0.1.0",
-    description="Waterlinked A-50 DVL service",
+    description="Water Linked DVL service",
     license="MIT",
     install_requires=[
         "python3-nmap == 1.5.4",

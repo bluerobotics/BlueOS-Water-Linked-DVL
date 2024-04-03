@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Driver for the Waterlinked DVL A-50
+Driver for the Water Linked DVL A-50
 """
 
 import json
