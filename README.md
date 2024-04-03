@@ -15,7 +15,7 @@
 ### v1.0.1
  - Fixed an issue where the driver was sending Rangefinder messages with invalid data
 
-This is a docker implementation of a Waterlinked DVL A50 driver as a BlueOS Extension.
+This is a docker implementation of a Waterlinked DVL A50 and A125 driver as a BlueOS Extension.
 
 ## Install
 
