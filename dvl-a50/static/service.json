@@ -3,7 +3,7 @@
     "description":"Driver for Water Linked's DVL",
     "icon":"mdi-dots-vertical",
     "company":"Blue Robotics",
-    "version":"1.0.4",
+    "version":"1.0.5",
     "webpage":"https://github.com/bluerobotics/BlueOS-Water-Linked-DVL",
     "api":""
  }

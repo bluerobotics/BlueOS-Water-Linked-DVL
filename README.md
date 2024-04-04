@@ -2,6 +2,9 @@
 
 ## Changelog
 
+### v1.0.5
+ - Update texts to make support of DVL A125 obvious
+
 ### v1.0.4
  - Fix issue introduced in v1.0.3 where the extension was unable to talk to Cable-guy
 
