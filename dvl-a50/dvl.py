@@ -283,6 +283,26 @@ class DvlDriver(threading.Thread):
             self.mav.set_param("RNGFND1_TYPE", "MAV_PARAM_TYPE_UINT8", 10)  # MAVLINK
         return True
 
+    def load_params(self, selector: str) -> bool:
+        """
+        Load EK3_SRC1 parameters to match the use case:
+        "dvl"       The DVL will be used for horizontal position and velocity
+        "dvl_gps"   The GPS will be used for horizontal position, and the DVL will be used for horizontal velocity
+        """
+        if selector == "dvl":
+            self.mav.set_param("EK3_GPS_TYPE", "MAV_PARAM_TYPE_UINT8", 3)  # Disable
+            self.mav.set_param("EK3_SRC1_POSXY", "MAV_PARAM_TYPE_UINT8", 6)  # EXTNAV
+            self.mav.set_param("EK3_SRC1_VELXY", "MAV_PARAM_TYPE_UINT8", 6)  # EXTNAV
+            self.mav.set_param("EK3_SRC1_POSZ", "MAV_PARAM_TYPE_UINT8", 1)  # BARO
+            return True
+        if selector == "dvl_gps":
+            self.mav.set_param("EK3_GPS_TYPE", "MAV_PARAM_TYPE_UINT8", 0)  # Enable
+            self.mav.set_param("EK3_SRC1_POSXY", "MAV_PARAM_TYPE_UINT8", 3)  # GPS
+            self.mav.set_param("EK3_SRC1_VELXY", "MAV_PARAM_TYPE_UINT8", 6)  # EXTNAV
+            self.mav.set_param("EK3_SRC1_POSZ", "MAV_PARAM_TYPE_UINT8", 1)  # BARO
+            return True
+        return False
+
     def setup_mavlink(self) -> None:
         """
         Sets up mavlink streamrates so we have the needed messages at the
@@ -294,7 +314,7 @@ class DvlDriver(threading.Thread):
 
     def setup_params(self) -> None:
         """
-        Sets up the required params for DVL integration
+        Sets up the required params for DVL integration -- but leave the EK3_SRC1 params alone
         """
         self.mav.set_param("AHRS_EKF_TYPE", "MAV_PARAM_TYPE_UINT8", 3)
         # TODO: Check if really required. It doesn't look like the ekf2 stops at all
@@ -302,10 +322,6 @@ class DvlDriver(threading.Thread):
 
         self.mav.set_param("EK3_ENABLE", "MAV_PARAM_TYPE_UINT8", 1)
         self.mav.set_param("VISO_TYPE", "MAV_PARAM_TYPE_UINT8", 1)
-        self.mav.set_param("EK3_GPS_TYPE", "MAV_PARAM_TYPE_UINT8", 3)
-        self.mav.set_param("EK3_SRC1_POSXY", "MAV_PARAM_TYPE_UINT8", 6)  # EXTNAV
-        self.mav.set_param("EK3_SRC1_VELXY", "MAV_PARAM_TYPE_UINT8", 6)  # EXTNAV
-        self.mav.set_param("EK3_SRC1_POSZ", "MAV_PARAM_TYPE_UINT8", 1)  # BARO
         if self.rangefinder:
             self.mav.set_param("RNGFND1_TYPE", "MAV_PARAM_TYPE_UINT8", 10)  # MAVLINK
 
