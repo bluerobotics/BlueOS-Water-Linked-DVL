@@ -42,6 +42,8 @@
 							<h2>Settings</h2>
 							<v-switch v-model="this.enabled" inset :label="`Enable DVL driver`" @change="setDvlEnabled($event)"></v-switch>
 							<v-switch v-model="this.rangefinder" inset :label="`Send range data through MAVLink`" @change="setDvlAsRangefinder($event)"></v-switch>
+							<v-btn id="btn-load-dvl" type="button" class="btn btn-primary" @click="loadParams('dvl');">Load parameters for DVL</v-btn>
+							<v-btn id="btn-load-dvl-gps" type="button" class="btn btn-primary" @click="loadParams('dvl_gps');">Load parameters for DVL+GPS</v-btn>
 							<h2>Status</h2>
 							<div>
 								<textarea readonly style="width:100%;"
@@ -225,6 +227,14 @@
 				const request = new XMLHttpRequest();
 				request.timeout = 800;
 				request.open('GET', 'use_as_rangefinder/' + value, true);
+				request.send();
+			},
+
+			/* Load parameters */
+			loadParams(value) {
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'load_params/' + value, true);
 				request.send();
 			},
 

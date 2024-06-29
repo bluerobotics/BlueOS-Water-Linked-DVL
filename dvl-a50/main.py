@@ -63,6 +63,14 @@ class API:
             return self.dvl.set_use_as_rangefinder(enabled == "true")
         return False
 
+    def load_params(self, selector: str) -> bool:
+        """
+        Load parameters
+        """
+        if selector in ["dvl", "dvl_gps"]:
+            return self.dvl.load_params(selector)
+        return False
+
     def set_message_type(self, messagetype: str):
         self.dvl.set_should_send(messagetype)
 
@@ -82,6 +90,10 @@ if __name__ == "__main__":
     @app.route("/use_as_rangefinder/<enable>")
     def set_use_rangefinder(enable: str):
         return str(api.set_use_as_rangefinder(enable))
+
+    @app.route("/load_params/<selector>")
+    def load_params(selector: str):
+        return str(api.load_params(selector))
 
     @app.route("/orientation/<int:orientation>")
     def set_orientation(orientation: int):
