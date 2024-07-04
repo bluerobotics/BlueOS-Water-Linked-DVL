@@ -382,7 +382,11 @@ class DvlDriver(threading.Thread):
             self.mav.send_vision(position_delta, attitude_delta, dt=data["time"] * 1e3, confidence=confidence)
         elif self.should_send == MessageType.SPEED_ESTIMATE:
             velocity = [vx, vy, vz] if self.current_orientation == DVL_DOWN else [vz, vy, -vx]  # DVL_FORWARD
-            self.mav.send_vision_speed_estimate(velocity)
+            covariance = data.get("covariance")  # covariance was not provided in old protocol versions
+            if covariance is not None:
+                covariance = [element for row in covariance for element in row]  # Flatten 3x3 to 9 elements
+
+            self.mav.send_vision_speed_estimate(velocity, covariance, reset_counter=self.reset_counter)
 
         self.last_attitude = self.current_attitude
 
