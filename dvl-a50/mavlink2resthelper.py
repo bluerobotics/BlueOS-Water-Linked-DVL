@@ -121,13 +121,13 @@ class Mavlink2RestHelper:
     "time_boot_ms": 0,
     "min_distance": 0,
     "max_distance": 5000,
-    "current_distance": {0},
+    "current_distance": {distance},
     "mavtype": {{
       "type": "MAV_DISTANCE_SENSOR_ULTRASOUND"
     }},
     "id": 0,
     "orientation": {{
-      "type": "MAV_SENSOR_ROTATION_PITCH_270"
+      "type": "{orientation}"
     }},
     "covariance": 0,
     "horizontal_fov": 0.0,
@@ -329,11 +329,11 @@ class Mavlink2RestHelper:
         )
         logger.info(post(MAVLINK2REST_URL + "/mavlink", data=data))
 
-    def send_rangefinder(self, distance: float):
+    def send_rangefinder(self, distance: float, orientation: str):
         "Sends message common.DISTANCE_SENSOR to flight controller"
         if distance == -1:
             return
-        data = self.rangefinder_template.format(int(distance * 100))
+        data = self.rangefinder_template.format(distance=int(distance * 100), orientation=orientation)
 
         post(MAVLINK2REST_URL + "/mavlink", data=data)
 
