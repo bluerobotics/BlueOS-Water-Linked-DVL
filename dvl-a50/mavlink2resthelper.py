@@ -123,7 +123,7 @@ class Mavlink2RestHelper:
     "max_distance": 5000,
     "current_distance": {0},
     "mavtype": {{
-      "type": "MAV_DISTANCE_SENSOR_LASER"
+      "type": "MAV_DISTANCE_SENSOR_ULTRASOUND"
     }},
     "id": 0,
     "orientation": {{
