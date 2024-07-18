@@ -65,18 +65,8 @@ class Mavlink2RestHelper:
     "x": {vx},
     "y": {vy},
     "z": {vz},
-    "covariance": [
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0
-    ],
-    "reset_counter": 0
+    "covariance": {covariance},
+    "reset_counter": {reset_counter}
   }}
 }}"""
 
@@ -96,29 +86,7 @@ class Mavlink2RestHelper:
     "roll": {roll},
     "pitch": {pitch},
     "yaw": {yaw},
-    "covariance": [
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0
-    ],
+    "covariance": {covariance},
     "reset_counter": {reset_counter}
   }}
 }}"""
@@ -153,13 +121,13 @@ class Mavlink2RestHelper:
     "time_boot_ms": 0,
     "min_distance": 0,
     "max_distance": 5000,
-    "current_distance": {0},
+    "current_distance": {distance},
     "mavtype": {{
-      "type": "MAV_DISTANCE_SENSOR_LASER"
+      "type": "MAV_DISTANCE_SENSOR_ULTRASOUND"
     }},
     "id": 0,
     "orientation": {{
-      "type": "MAV_SENSOR_ROTATION_PITCH_270"
+      "type": "{orientation}"
     }},
     "covariance": 0,
     "horizontal_fov": 0.0,
@@ -311,7 +279,7 @@ class Mavlink2RestHelper:
             return False
 
     def send_vision(self, position_deltas, rotation_deltas=(0, 0, 0), confidence=100, dt=125000):
-        "Sends message VISION_POSITION_DELTA to flight controller"
+        "Sends message ardupilotmega.VISION_POSITION_DELTA to flight controller"
         data = self.vision_template.format(
             dt=int(dt),
             dRoll=radians(rotation_deltas[0]),
@@ -325,21 +293,29 @@ class Mavlink2RestHelper:
 
         post(MAVLINK2REST_URL + "/mavlink", data=data)
 
-    def send_vision_speed_estimate(self, speed_estimates):
-        "Sends message VISION_SPEED_ESTIMATE to flight controller"
+    def send_vision_speed_estimate(self, speed_estimates, covariance=None, reset_counter=0):
+        "Sends message common.VISION_SPEED_ESTIMATE to flight controller"
+        if covariance is None:
+            covariance = [float("NaN"), *[0.0] * 8]  # NaN first element means unknown
+
         data = self.vision_speed_estimate_template.format(
             us=int((time.time() - self.start_time) * 1e6),
             vx=speed_estimates[0],
             vy=speed_estimates[1],
             vz=speed_estimates[2],
+            covariance=covariance,
+            reset_counter=reset_counter,
         )
 
         post(MAVLINK2REST_URL + "/mavlink", data=data)
 
     def send_vision_position_estimate(
-        self, timestamp, position_estimates, attitude_estimates=(0.0, 0.0, 0.0), reset_counter=0
+        self, timestamp, position_estimates, attitude_estimates=(0.0, 0.0, 0.0), covariance=None, reset_counter=0
     ):
-        "Sends message GLOBAL_VISION_POSITION_ESTIMATE to flight controller"
+        "Sends message common.GLOBAL_VISION_POSITION_ESTIMATE to flight controller"
+        if covariance is None:
+            covariance = [float("NaN"), *[0.0] * 20]  # NaN first element means unknown
+
         data = self.global_vision_position_estimate_template.format(
             us=int(timestamp * 1e3),
             roll=radians(attitude_estimates[0]),
@@ -348,15 +324,16 @@ class Mavlink2RestHelper:
             x=position_estimates[0],
             y=position_estimates[1],
             z=position_estimates[2],
+            covariance=covariance,
             reset_counter=reset_counter,
         )
         logger.info(post(MAVLINK2REST_URL + "/mavlink", data=data))
 
-    def send_rangefinder(self, distance: float):
-        "Sends message DISTANCE_SENSOR to flight controller"
+    def send_rangefinder(self, distance: float, orientation: str):
+        "Sends message common.DISTANCE_SENSOR to flight controller"
         if distance == -1:
             return
-        data = self.rangefinder_template.format(int(distance * 100))
+        data = self.rangefinder_template.format(distance=int(distance * 100), orientation=orientation)
 
         post(MAVLINK2REST_URL + "/mavlink", data=data)
 

@@ -382,7 +382,8 @@ class DvlDriver(threading.Thread):
             return
 
         if self.rangefinder and alt > 0.05:
-            self.mav.send_rangefinder(alt)
+            orientation = "MAV_SENSOR_ROTATION_PITCH_270" if self.current_orientation == DVL_DOWN else "MAV_SENSOR_ROTATION_NONE"
+            self.mav.send_rangefinder(alt, orientation)
 
         position_delta = [0, 0, 0]
         attitude_delta = [0, 0, 0]
@@ -400,7 +401,25 @@ class DvlDriver(threading.Thread):
             self.mav.send_vision(position_delta, attitude_delta, dt=data["time"] * 1e3, confidence=confidence)
         elif self.should_send == MessageType.SPEED_ESTIMATE:
             velocity = [vx, vy, vz] if self.current_orientation == DVL_DOWN else [vz, vy, -vx]  # DVL_FORWARD
-            self.mav.send_vision_speed_estimate(velocity)
+            covariance = data.get("covariance")  # covariance was not provided in old protocol versions
+            if covariance is not None:
+                ((vxx, vxy, vxz), (vyx, vyy, vyz), (vzx, vzy, vzz)) = covariance  # Extract values
+                # Flatten 3x3 into 9 element list, with order determined by orientation.
+                # Shown in matrix form to help with visualisation.
+                if self.current_orientation == DVL_DOWN:
+                    covariance = [
+                        vxx, vxy, vxz,
+                        vyx, vyy, vyz,
+                        vzx, vzy, vzz
+                    ]
+                else:  # DVL_FORWARD
+                    covariance = [
+                         vzz,  vzy, -vzx,
+                         vyz,  vyy, -vyx,
+                        -vxz, -vxy,  vxx
+                    ]
+
+            self.mav.send_vision_speed_estimate(velocity, covariance, reset_counter=self.reset_counter)
 
         self.last_attitude = self.current_attitude
 

@@ -51,8 +51,6 @@
 							</div>
 						</v-card>
 					</v-col>
-					<!-- uncoomment this to have control of what kind of message is bein sent and to allow pointing the dvl forward-->
-					<!--
 					<v-col>
 						<v-card height="200">
 							<h2>Message type:</h2>
@@ -71,7 +69,6 @@
 						</v-card>
 					</v-col>
 					<v-col>
-					-->
 					<v-col
 					class="col-12 col-sm-6 col-md-8">
 						<v-card height="650">
@@ -128,7 +125,7 @@
 				rovMarker: undefined,
 				newHostname: null,
 				rovPosition: [],
-				messageOptions: ["POSITION_DELTA", "POSITION_ESTIMATE", "SPEED_ESTIMATE"],
+				messageOptions: ["POSITION_DELTA", "SPEED_ESTIMATE", "POSITION_ESTIMATE"],
 				orientationOptions: {
 					"Downwards (LED pointing forward)": 1,
 					"Forward (Experimental)": 2,
@@ -145,7 +142,7 @@
 						this.enabled = data.enabled
 						this.orientation = data.orientation
 						this.origin = data.origin
-						if (this.newOrigin === ['0','0']) {
+						if (this.newOrigin == ['0','0']) {
 							this.newOrigin = data.origin
 						}
 						this.rangefinder = data.rangefinder
