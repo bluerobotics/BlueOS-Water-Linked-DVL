@@ -384,6 +384,8 @@ class DvlDriver(threading.Thread):
         if self.rangefinder and alt > 0.05:
             self.mav.send_rangefinder(alt)
 
+        position_delta = [0, 0, 0]
+        attitude_delta = [0, 0, 0]
         if self.should_send == MessageType.POSITION_DELTA:
             dRoll, dPitch, dYaw = [
                 current_angle - last_angle
