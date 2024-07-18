@@ -2,6 +2,11 @@
 
 ## Changelog
 
+### v1.0.6
+ - No longer sets parameters automatically. Users can now change for two modes of operation:
+     - DVL-only, the recommended mode
+     - DVL+GPS, experimental mode which allows fusing (underwater) GPS and DVL data
+
 ### v1.0.5
  - Update texts to make support of DVL A125 obvious
 
