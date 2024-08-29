@@ -81,8 +81,8 @@
 							<v-row>
 								<v-col class="col-5">
 									<form>
-										<v-text-field label="Latitude" id="lat" variant="outlined" v-model="this.newOrigin[0]"></v-text-field>
-										<v-text-field label="Longitude" id="long" variant="outlined" v-model="this.newOrigin[1]"></v-text-field>
+										<v-text-field label="Latitude" id="lat" variant="outlined" v-model.number="this.newLat" @change="updateLat"></v-text-field>
+										<v-text-field label="Longitude" id="long" variant="outlined" v-model.number="this.newLong" @change="updateLon"></v-text-field>
 									</form>
 								</v-col>
 								<v-col class="col-7">
@@ -121,7 +121,8 @@
 				enabled: null,
 				orientation: null,
 				origin: [0, 0],
-				newOrigin: [0, 0],
+				newLat: 0,
+				newLong: 0,
 				rangefinder: null,
 				messageToSend: null,
 				hostname: null,
@@ -144,13 +145,13 @@
 						this.status = data.status
 						this.enabled = data.enabled
 						this.orientation = data.orientation
-						this.origin = data.origin
-						if (this.newOrigin === ['0','0']) {
-							this.newOrigin = data.origin
+						if (this.newLat == 0 && this.newLong == 0) {
+							this.newLat = data.origin[0]
+							this.newLong = data.origin[1]
 						}
 						this.rangefinder = data.rangefinder
 						this.messageToSend = data.messageToSend
-					  this.hostname = data.hostname
+						this.hostname = data.hostname
 						this.messageToSend = data.should_send
 						if (this.newHostname == null) {
 							this.newHostname = data.hostname
@@ -198,8 +199,11 @@
 				marker = L.marker([33.841456, -118.335212], { title: "New Origin", draggable: true })
 					.addTo(map)
 					.on('dragend', (event) => {
-						this.newOrigin = [event.latlng.lat, event.latlng.lng]
+						this.newLat = event.latlng.lat
+						this.newLong = event.latlng.lng
 					});
+				this.newLat = 33.841456
+				this.newLong = -118.335212
 
 				map.on('click', (e) => {
 					newLng = e.latlng.lng
@@ -209,9 +213,10 @@
 					while (newLng < -180) {
 						newLng += 360
 					}
-					this.newOrigin = [e.latlng.lat, newLng]
+					this.newLat = e.latlng.lat
+					this.newLong = newLng
 					marker.setLatLng(e.latlng)
-					map.setView([e.latlng.lat, newLng])
+					map.setView([this.newLat, this.newLong])
 				});
 			},
 			/* Toggles driver on/off */
@@ -255,6 +260,16 @@
 
 			},
 
+			updateLat(value) {
+				this.newLat = value
+				marker.setLatLng([this.newLat, this.newLong])
+			},
+
+			updateLon(value) {
+				this.newLong = value
+				marker.setLatLng([this.newLat, this.newLong])
+			},
+
 			/* Sets DVL MessageType */
 			setDvlMessage(msg) {
 				const request = new XMLHttpRequest();
@@ -266,7 +281,7 @@
 			setCurrentLocation() {
 				const request = new XMLHttpRequest();
 				request.timeout = 800;
-				request.open('GET', 'setcurrentposition/' + this.newOrigin[0] + '/' + this.newOrigin[1], true);
+				request.open('GET', 'setcurrentposition/' + this.newLat + '/' + this.newLong, true);
 				request.send();
 			},
 
