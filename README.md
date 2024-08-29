@@ -2,6 +2,9 @@
 
 ## Changelog
 
+### v1.0.7
+  - Fix using lat/long inputs with no internet
+
 ### v1.0.6
  - No longer sets parameters automatically. Users can now change for two modes of operation:
      - DVL-only, the recommended mode
