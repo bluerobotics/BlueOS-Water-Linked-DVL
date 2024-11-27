@@ -27,10 +27,13 @@ class Mavlink2RestHelper:
         self.component = component
         # store vision template data so we don't need to fetch it multiple times
         self.start_time = time.time()
-        self.vision_template = """
+        self.vision_template = (
+            """
 {{
   "header": {{
-    "system_id": """ + str(vehicle) + """,
+    "system_id": """
+            + str(vehicle)
+            + """,
     "component_id": 197,
     "sequence": 0
   }},
@@ -51,11 +54,15 @@ class Mavlink2RestHelper:
     "confidence": {confidence}
   }}
 }}"""
+        )
 
-        self.vision_speed_estimate_template = """
+        self.vision_speed_estimate_template = (
+            """
         {{
   "header": {{
-    "system_id": """ + str(vehicle) + """,
+    "system_id": """
+            + str(vehicle)
+            + """,
     "component_id": 197,
     "sequence": 0
   }},
@@ -79,11 +86,15 @@ class Mavlink2RestHelper:
     "reset_counter": 0
   }}
 }}"""
+        )
 
-        self.global_vision_position_estimate_template = """
+        self.global_vision_position_estimate_template = (
+            """
 {{
   "header": {{
-    "system_id": """ + str(vehicle) + """,
+    "system_id": """
+            + str(vehicle)
+            + """,
     "component_id": 197,
     "sequence": 0
   }},
@@ -122,11 +133,15 @@ class Mavlink2RestHelper:
     "reset_counter": {reset_counter}
   }}
 }}"""
+        )
 
-        self.gps_origin_template = """
+        self.gps_origin_template = (
+            """
 {{
   "header": {{
-    "system_id": """ + str(vehicle) + """,
+    "system_id": """
+            + str(vehicle)
+            + """,
     "component_id": 197,
     "sequence": 0
   }},
@@ -140,11 +155,15 @@ class Mavlink2RestHelper:
   }}
 }}
         """
+        )
 
-        self.rangefinder_template = """
+        self.rangefinder_template = (
+            """
 {{
   "header": {{
-    "system_id": """ + str(vehicle) + """,
+    "system_id": """
+            + str(vehicle)
+            + """,
     "component_id": 197,
     "sequence": 0
   }},
@@ -174,10 +193,14 @@ class Mavlink2RestHelper:
   }}
 }}
 """
-        self.statustext_template = """
+        )
+        self.statustext_template = (
+            """
 {{
   "header": {{
-    "system_id": """ + str(vehicle) + """,
+    "system_id": """
+            + str(vehicle)
+            + """,
     "component_id": 197,
     "sequence": 0
   }},
@@ -192,6 +215,7 @@ class Mavlink2RestHelper:
   }}
 }}
 """
+        )
 
     def get_float(self, path: str, vehicle: Optional[int] = None, component: Optional[int] = None) -> float:
         """
