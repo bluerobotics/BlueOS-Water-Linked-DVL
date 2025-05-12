@@ -153,15 +153,19 @@ class DvlDriver(threading.Thread):
         """
         self.wait_for_cable_guy()
         ip = self.hostname
-        self.status = f"Trying to talk to dvl at http://{ip}/api/v1/about"
-        while not self.version:
-            if not request(f"http://{ip}/api/v1/about"):
-                self.report_status(f"could not talk to dvl at {ip}, looking for it in the local network...")
-            found_dvl = find_the_dvl()
-            if found_dvl:
+        self.report_status(f"Trying to talk to dvl at http://{ip}/api/v1/about")
+        while "DVL not found":
+            if request(f"http://{ip}/api/v1/about"):
+                self.report_status(f"DVL found at {ip}, using it.")
+                return
+            self.report_status(f"Could not talk to dvl at {ip}, looking for it in the local network...")
+            try:
+                found_dvl = find_the_dvl()
                 self.report_status(f"Dvl found at address {found_dvl}, using it instead.")
                 self.hostname = found_dvl
                 return
+            except Exception as e:
+                self.report_status(f"Unable to find dvl: {e}")
             time.sleep(1)
 
     def wait_for_cable_guy(self):
