@@ -161,6 +161,7 @@ class DvlDriver(threading.Thread):
             if found_dvl:
                 self.report_status(f"Dvl found at address {found_dvl}, using it instead.")
                 self.hostname = found_dvl
+                self.save_settings()
                 return
             time.sleep(1)
 
