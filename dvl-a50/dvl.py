@@ -52,6 +52,7 @@ class DvlDriver(threading.Thread):
     current_orientation = DVL_DOWN
     enabled = True
     rangefinder = True
+    beam_distances_enabled = True  # New setting for individual beam distances
     hostname = HOSTNAME
     timeout = 3  # tcp timeout in seconds
     origin = [0, 0]
@@ -63,6 +64,10 @@ class DvlDriver(threading.Thread):
     last_temperature_check_time = 0
     temperature_check_interval_s = 30
     temperature_too_hot = 45
+    
+    # Status tracking for individual beam distances
+    last_beam_distances = [0, 0, 0, 0]
+    last_beam_valid = [False, False, False, False]
 
     def __init__(self, orientation=DVL_DOWN) -> None:
         threading.Thread.__init__(self)
@@ -88,6 +93,8 @@ class DvlDriver(threading.Thread):
                 self.origin = data["origin"]
                 self.rangefinder = data["rangefinder"]
                 self.should_send = data["should_send"]
+                # Handle new settings that may not exist in older config files
+                self.beam_distances_enabled = data.get("beam_distances_enabled", True)
                 logger.debug("Loaded settings: ", data)
         except FileNotFoundError:
             logger.warning("Settings file not found, using default.")
@@ -120,6 +127,7 @@ class DvlDriver(threading.Thread):
                         "hostname": self.hostname,
                         "rangefinder": self.rangefinder,
                         "should_send": self.should_send,
+                        "beam_distances_enabled": self.beam_distances_enabled,
                     }
                 )
             )
@@ -136,6 +144,9 @@ class DvlDriver(threading.Thread):
             "origin": self.origin,
             "rangefinder": self.rangefinder,
             "should_send": self.should_send,
+            "beam_distances_enabled": self.beam_distances_enabled,
+            "beam_distances": self.last_beam_distances,
+            "beam_valid": self.last_beam_valid,
         }
 
     @property
@@ -283,6 +294,14 @@ class DvlDriver(threading.Thread):
             self.mav.set_param("RNGFND1_TYPE", "MAV_PARAM_TYPE_UINT8", 10)  # MAVLINK
         return True
 
+    def set_beam_distances_enabled(self, enable: bool) -> bool:
+        """
+        Enables/disables individual beam DISTANCE_SENSOR messages
+        """
+        self.beam_distances_enabled = enable
+        self.save_settings()
+        return True
+
     def load_params(self, selector: str) -> bool:
         """
         Load EK3_SRC1 parameters to match the use case:
@@ -381,8 +400,25 @@ class DvlDriver(threading.Thread):
             logger.info("Invalid  dvl reading, ignoring it.")
             return
 
+        # Send main rangefinder message (average altitude)
         if self.rangefinder and alt > 0.05:
             self.mav.send_rangefinder(alt)
+
+        # Process individual beam distances if available and enabled
+        if self.beam_distances_enabled and "transducers" in data:
+            beam_distances = []
+            beam_valid = []
+            
+            for transducer in data["transducers"]:
+                beam_distances.append(transducer["distance"])
+                beam_valid.append(transducer["beam_valid"])
+            
+            # Update status tracking
+            self.last_beam_distances = beam_distances
+            self.last_beam_valid = beam_valid
+            
+            # Send individual beam distance messages
+            self.mav.send_beam_distances(beam_distances, beam_valid)
 
         position_delta = [0, 0, 0]
         attitude_delta = [0, 0, 0]
@@ -411,6 +447,20 @@ class DvlDriver(threading.Thread):
             self.timestamp = data["ts"]
             self.mav.send_vision_position_estimate(
                 self.timestamp, [x, y, z], self.current_attitude, reset_counter=self.reset_counter
+            )
+        
+        # Extra Credit: Send GLOBAL_VISION_POSITION_ESTIMATE with DVL AHRS data
+        # This allows comparison between ArduSub's AHRS and the DVL's AHRS
+        if "roll" in data and "pitch" in data and "yaw" in data:
+            dvl_attitude = (data["roll"], data["pitch"], data["yaw"])
+            # Convert to degrees since send_vision_position_estimate expects degrees
+            dvl_attitude_deg = [math.degrees(angle) for angle in dvl_attitude]
+            
+            # Send as a separate vision position estimate with DVL's attitude data
+            # Using timestamp + 1 to distinguish from regular position estimate
+            self.mav.send_vision_position_estimate(
+                self.timestamp + 1, [data["x"], data["y"], data["z"]], 
+                dvl_attitude_deg, reset_counter=self.reset_counter + 1000
             )
 
     def check_temperature(self):

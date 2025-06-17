@@ -42,12 +42,64 @@
 							<h2>Settings</h2>
 							<v-switch v-model="this.enabled" inset :label="`Enable DVL driver`" @change="setDvlEnabled($event)"></v-switch>
 							<v-switch v-model="this.rangefinder" inset :label="`Send range data through MAVLink`" @change="setDvlAsRangefinder($event)"></v-switch>
+							<v-switch v-model="this.beamDistancesEnabled" inset :label="`Send individual beam distances`" @change="setBeamDistancesEnabled($event)"></v-switch>
 							<v-btn id="btn-load-dvl" type="button" class="btn btn-primary" @click="loadParams('dvl');">Load parameters for DVL</v-btn>
 							<v-btn id="btn-load-dvl-gps" type="button" class="btn btn-primary" @click="loadParams('dvl_gps');">Load parameters for DVL+GPS</v-btn>
 							<h2>Status</h2>
 							<div>
 								<textarea readonly style="width:100%;"
 									id="dvl-status"> {{status}} </textarea>
+							</div>
+						</v-card>
+					</v-col>
+					<v-col>
+						<v-card height="650">
+							<h2>Distance Sensors</h2>
+							<div style="padding: 20px;">
+								<h3>Average Altitude</h3>
+								<div style="font-size: 24px; color: #1976d2; margin-bottom: 20px;">
+									{{ rangefinder ? 'Enabled' : 'Disabled' }}
+								</div>
+								
+								<h3>Individual Beam Distances</h3>
+								<div style="margin-bottom: 10px;">
+									Status: {{ beamDistancesEnabled ? 'Enabled' : 'Disabled' }}
+								</div>
+								
+								<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+									<div style="border: 1px solid #ccc; padding: 10px; text-align: center;">
+										<div style="font-weight: bold;">Beam 0 (Front-Left)</div>
+										<div style="font-size: 18px;" :style="{ color: beamValid[0] ? '#4caf50' : '#f44336' }">
+											{{ beamValid[0] ? (beamDistances[0]).toFixed(2) + ' m' : 'Invalid' }}
+										</div>
+									</div>
+									<div style="border: 1px solid #ccc; padding: 10px; text-align: center;">
+										<div style="font-weight: bold;">Beam 1 (Front-Right)</div>
+										<div style="font-size: 18px;" :style="{ color: beamValid[1] ? '#4caf50' : '#f44336' }">
+											{{ beamValid[1] ? (beamDistances[1]).toFixed(2) + ' m' : 'Invalid' }}
+										</div>
+									</div>
+									<div style="border: 1px solid #ccc; padding: 10px; text-align: center;">
+										<div style="font-weight: bold;">Beam 2 (Back-Right)</div>
+										<div style="font-size: 18px;" :style="{ color: beamValid[2] ? '#4caf50' : '#f44336' }">
+											{{ beamValid[2] ? (beamDistances[2]).toFixed(2) + ' m' : 'Invalid' }}
+										</div>
+									</div>
+									<div style="border: 1px solid #ccc; padding: 10px; text-align: center;">
+										<div style="font-weight: bold;">Beam 3 (Back-Left)</div>
+										<div style="font-size: 18px;" :style="{ color: beamValid[3] ? '#4caf50' : '#f44336' }">
+											{{ beamValid[3] ? (beamDistances[3]).toFixed(2) + ' m' : 'Invalid' }}
+										</div>
+									</div>
+								</div>
+								
+								<div style="margin-top: 20px; font-size: 12px; color: #666;">
+									<strong>Note:</strong> Each beam sends DISTANCE_SENSOR messages with different orientations:<br/>
+									• Beam 0: YAW_315° (Front-Left)<br/>
+									• Beam 1: YAW_45° (Front-Right)<br/>
+									• Beam 2: YAW_135° (Back-Right)<br/>
+									• Beam 3: YAW_225° (Back-Left)
+								</div>
 							</div>
 						</v-card>
 					</v-col>
@@ -133,7 +185,10 @@
 				orientationOptions: {
 					"Downwards (LED pointing forward)": 1,
 					"Forward (Experimental)": 2,
-				}
+				},
+				beamDistancesEnabled: false,
+				beamDistances: [0, 0, 0, 0],
+				beamValid: [false, false, false, false]
 			}
 		},
 		methods: {
@@ -156,6 +211,9 @@
 						if (this.newHostname == null) {
 							this.newHostname = data.hostname
 						}
+						this.beamDistancesEnabled = data.beamDistancesEnabled
+						this.beamDistances = data.beamDistances
+						this.beamValid = data.beamValid
 					})
 					.catch((error) => {
 						this.status = `Unable to talk to DVL service: ${error}`
@@ -284,6 +342,13 @@
 				request.open('GET', 'setcurrentposition/' + this.newLat + '/' + this.newLong, true);
 				request.send();
 			},
+
+			setBeamDistancesEnabled(value) {
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'beam_distances/' + value, true);
+				request.send();
+			}
 
 		},
 		mounted() {
