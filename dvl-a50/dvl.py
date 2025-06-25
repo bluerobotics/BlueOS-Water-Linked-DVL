@@ -163,6 +163,7 @@ class DvlDriver(threading.Thread):
                 found_dvl = find_the_dvl()
                 self.report_status(f"Dvl found at address {found_dvl}, using it instead.")
                 self.hostname = found_dvl
+                self.save_settings()
                 return
             except Exception as e:
                 self.report_status(f"Unable to find dvl: {e}")
