@@ -35,6 +35,12 @@ class API:
             return self.dvl.set_enabled(enabled == "true")
         return False
 
+    def set_cutoff(self, cutoff: int) -> bool:
+        """
+        Enables/Disables the DVL driver
+        """
+        return self.dvl.set_confidence_cutoff(int(cutoff))
+
     def set_orientation(self, orientation: int) -> bool:
         """
         Sets the DVL mounting orientation:
@@ -86,6 +92,10 @@ if __name__ == "__main__":
     @app.route("/enable/<enable>")
     def set_enabled(enable: str):
         return str(api.set_enabled(enable))
+
+    @app.route("/cutoff/<cutoff>")
+    def set_cutoff(cutoff: int):
+        return str(api.set_cutoff(cutoff))
 
     @app.route("/use_as_rangefinder/<enable>")
     def set_use_rangefinder(enable: str):

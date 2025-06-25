@@ -38,12 +38,18 @@
 					<br />
 				<v-row>
 					<v-col>
-						<v-card height="650">
+						<v-card height="650" width="300">
 							<h2>Settings</h2>
 							<v-switch v-model="this.enabled" inset :label="`Enable DVL driver`" @change="setDvlEnabled($event)"></v-switch>
 							<v-switch v-model="this.rangefinder" inset :label="`Send range data through MAVLink`" @change="setDvlAsRangefinder($event)"></v-switch>
 							<v-btn id="btn-load-dvl" type="button" class="btn btn-primary" @click="loadParams('dvl');">Load parameters for DVL</v-btn>
 							<v-btn id="btn-load-dvl-gps" type="button" class="btn btn-primary" @click="loadParams('dvl_gps');">Load parameters for DVL+GPS</v-btn>
+							<label for="confidence-cutoff">Confidence Cutoff:</label>
+							<v-slider id="confidence-cutoff" @change="setConfidenceCutoff" v-model="confidenceCutoff" :min="0" :max="100" :step="1">
+								<template #prepend>
+									<span>{{ confidenceCutoff }}</span>
+								</template>
+							</v-slider>
 							<h2>Status</h2>
 							<div>
 								<textarea readonly style="width:100%;"
@@ -133,10 +139,17 @@
 				orientationOptions: {
 					"Downwards (LED pointing forward)": 1,
 					"Forward (Experimental)": 2,
-				}
+				},
+				confidenceCutoff: 10,
 			}
 		},
 		methods: {
+			setConfidenceCutoff(value) {
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'cutoff/' + value, true);
+				request.send();
+			},
 			updateDvlStatus() {
 				axios.get('/get_status', { timeout: 1000 })
 					.then((response) => {
@@ -156,6 +169,7 @@
 						if (this.newHostname == null) {
 							this.newHostname = data.hostname
 						}
+						this.confidenceCutoff = data.confidence_cutoff
 					})
 					.catch((error) => {
 						this.status = `Unable to talk to DVL service: ${error}`
