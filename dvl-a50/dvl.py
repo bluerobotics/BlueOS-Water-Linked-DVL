@@ -118,6 +118,7 @@ class DvlDriver(threading.Thread):
                         "enabled": self.enabled,
                         "orientation": self.current_orientation,
                         "hostname": self.hostname,
+                        "origin": self.origin,
                         "rangefinder": self.rangefinder,
                         "should_send": self.should_send,
                     }
