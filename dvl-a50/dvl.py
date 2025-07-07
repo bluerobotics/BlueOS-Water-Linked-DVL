@@ -82,12 +82,12 @@ class DvlDriver(threading.Thread):
         try:
             with open(self.settings_path) as settings:
                 data = json.load(settings)
-                self.enabled = data["enabled"]
-                self.current_orientation = data["orientation"]
-                self.hostname = data["hostname"]
-                self.origin = data["origin"]
-                self.rangefinder = data["rangefinder"]
-                self.should_send = data["should_send"]
+                self.enabled = data.get("enabled", self.enabled)
+                self.current_orientation = data.get("orientation", self.orientation)
+                self.hostname = data.get("hostname", self.hostname)
+                self.origin = data.get("origin", self.origin)
+                self.rangefinder = data.get("rangefinder", self.rangefinder)
+                self.should_send = data.get("should_send", self.should_send)
                 logger.debug("Loaded settings: ", data)
         except FileNotFoundError:
             logger.warning("Settings file not found, using default.")
