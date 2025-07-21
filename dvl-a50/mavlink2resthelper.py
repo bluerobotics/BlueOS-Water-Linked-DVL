@@ -153,13 +153,13 @@ class Mavlink2RestHelper:
     "time_boot_ms": 0,
     "min_distance": 0,
     "max_distance": 5000,
-    "current_distance": {0},
+    "current_distance": {distance},
     "mavtype": {{
       "type": "MAV_DISTANCE_SENSOR_LASER"
     }},
-    "id": 0,
+    "id": {sensor_id},
     "orientation": {{
-      "type": "MAV_SENSOR_ROTATION_PITCH_270"
+      "type": "{orientation}"
     }},
     "covariance": 0,
     "horizontal_fov": 0.0,
@@ -352,13 +352,35 @@ class Mavlink2RestHelper:
         )
         logger.info(post(MAVLINK2REST_URL + "/mavlink", data=data))
 
-    def send_rangefinder(self, distance: float):
+    def send_rangefinder(self, distance: float, sensor_id: int = 0, orientation: str = "MAV_SENSOR_ROTATION_PITCH_270"):
         "Sends message DISTANCE_SENSOR to flight controller"
         if distance == -1:
             return
-        data = self.rangefinder_template.format(int(distance * 100))
-
+        data = self.rangefinder_template.format(
+            distance=int(distance * 100), 
+            sensor_id=sensor_id, 
+            orientation=orientation
+        )
         post(MAVLINK2REST_URL + "/mavlink", data=data)
+
+    def send_beam_distances(self, beam_distances: list, beam_valid: list):
+        """
+        Send individual beam distances from DVL transducers as separate DISTANCE_SENSOR messages
+        Each beam gets a different orientation to work around ArduSub's single rangefinder per orientation limitation
+        """
+        # Define orientations for each beam (1=rear-right, 2=rear-left, 3=front-left, 4=front-right)
+        # These orientations represent the 4 quadrants around the DVL
+        beam_orientations = [
+            "MAV_SENSOR_ROTATION_YAW_135",  # rear-right
+            "MAV_SENSOR_ROTATION_YAW_225",  # rear-left
+            "MAV_SENSOR_ROTATION_YAW_315",  # front-left 
+            "MAV_SENSOR_ROTATION_YAW_45"    # front-right
+        ]
+        
+        for i, (distance, valid) in enumerate(zip(beam_distances, beam_valid)):
+            if valid and distance > 0.05:  # Only send valid readings above 5cm
+                # Use sensor_id 1-4 for individual beams (0 is reserved for average)
+                self.send_rangefinder(distance, sensor_id=i+1, orientation=beam_orientations[i])
 
     def set_gps_origin(self, lat, lon):
         data = self.gps_origin_template.format(lat=int(float(lat) * 1e7), lon=int(float(lon) * 1e7))
