@@ -1,4 +1,5 @@
 import json
+import os
 import time
 from typing import List, Optional
 
@@ -25,6 +26,11 @@ def get_ips_wildcards(ips: List[str]):
 
 
 def find_the_dvl() -> Optional[str]:
+    # Skip DVL scanning if running in test mode
+    if os.environ.get("DVL_TEST_MODE", "false").lower() == "true":
+        logger.info("Running in test mode, skipping DVL network scan")
+        return None
+        
     # The dvl always reports 192.168.194.95 on mdns, so we need to take drastic measures.
     # Nmap to the rescue!
 
