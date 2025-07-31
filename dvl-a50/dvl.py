@@ -160,11 +160,12 @@ class DvlDriver(threading.Thread):
                 return
             self.report_status(f"Could not talk to dvl at {ip}, looking for it in the local network...")
             try:
-                found_dvl = find_the_dvl()
-                self.report_status(f"Dvl found at address {found_dvl}, using it instead.")
-                self.hostname = found_dvl
-                self.save_settings()
-                return
+                found_dvl = find_the_dvl(report_status=self.report_status)
+                if found_dvl is not None:
+                    self.report_status(f"Dvl found at address {found_dvl}, using it instead.")
+                    self.hostname = found_dvl
+                    self.save_settings()
+                    return
             except Exception as e:
                 self.report_status(f"Unable to find dvl: {e}")
             time.sleep(1)

@@ -24,7 +24,7 @@ def get_ips_wildcards(ips: List[str]):
     return [".".join([*(ip.split(".")[0:-1]), "*"]) for ip in ips]
 
 
-def find_the_dvl() -> Optional[str]:
+def find_the_dvl(report_status) -> Optional[str]:
     # The dvl always reports 192.168.194.95 on mdns, so we need to take drastic measures.
     # Nmap to the rescue!
 
@@ -40,26 +40,35 @@ def find_the_dvl() -> Optional[str]:
 
     scans = get_ips_wildcards(current_ips)
     logger.info(f"Scanning: {scans} for DVLs")
-    candidates = []
     for ip in scans:
         results = []
         while not results:
             try:
-                results = nmap.scan_top_ports(ip, args="-p 80 --open")
+                report_status(f"Scanning {ip} for DVLs")
+                results = nmap.scan_command(ip, arg="-p 80 --open")
             except nmap3.exceptions.NmapExecutionError as e:
                 logger.debug(f"error running nmap: {e}, trying again in 1 second")
                 time.sleep(1)
         for result in results:
-            if result in current_ips:
+            # Skip non-host elements (like runtime, stats)
+            if result.tag != "host":
                 continue
-            if result in ("runtime", "stats"):
+
+            # Extract IP address from the XML element
+            address_elem = result.find("address[@addrtype='ipv4']")
+            if address_elem is None:
                 continue
-            candidates.append(result)
 
-    logger.info(f"candidates for being a dvl: {candidates}")
+            host_ip = address_elem.get("addr")
+            if host_ip is None:
+                continue
 
-    for candidate in candidates:
-        if check_for_proper_dvl(candidate):
-            logger.info(f"DVL found at {candidate}")
-            return candidate
+            logger.debug(f"Found host: {host_ip}")
+
+            if host_ip in current_ips:
+                continue
+
+            if check_for_proper_dvl(host_ip):
+                logger.info(f"DVL found at {host_ip}")
+                return host_ip
     return None
