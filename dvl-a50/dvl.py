@@ -49,12 +49,20 @@ class DvlDriver(threading.Thread):
     mav = Mavlink2RestHelper()
     socket = None
     port = 16171  # Water Linked mentioned they won't allow changing or disabling this
-    current_orientation = DVL_DOWN
+    orientation = DVL_DOWN
     enabled = True
     rangefinder = True
     hostname = HOSTNAME
     timeout = 3  # tcp timeout in seconds
     origin = [0, 0]
+    saved_settings = [
+        "enabled",
+        "orientation",
+        "hostname",
+        "origin",
+        "rangefinder",
+        "should_send",
+    ]
     settings_path = os.path.join(os.path.expanduser("~"), ".config", "dvl", "settings.json")
 
     should_send = MessageType.POSITION_DELTA
@@ -66,7 +74,7 @@ class DvlDriver(threading.Thread):
 
     def __init__(self, orientation=DVL_DOWN) -> None:
         threading.Thread.__init__(self)
-        self.current_orientation = orientation
+        self.orientation = orientation
         # used for calculating attitude delta
         self.last_attitude = (0, 0, 0)
         self.current_attitude = (0, 0, 0)
@@ -82,20 +90,21 @@ class DvlDriver(threading.Thread):
         try:
             with open(self.settings_path) as settings:
                 data = json.load(settings)
-                self.enabled = data["enabled"]
-                self.current_orientation = data["orientation"]
-                self.hostname = data["hostname"]
-                self.origin = data["origin"]
-                self.rangefinder = data["rangefinder"]
-                self.should_send = data["should_send"]
+                for setting_name in self.saved_settings:
+                    if setting_name in data:
+                        setattr(self, setting_name, data[setting_name])
+                    else:
+                        default = getattr(self, setting_name)
+                        logger.warning(f"key not found: {setting_name} - keeping {default=} instead:")
                 logger.debug("Loaded settings: ", data)
         except FileNotFoundError:
             logger.warning("Settings file not found, using default.")
         except ValueError:
             logger.warning("File corrupted, using default settings.")
-        except KeyError as error:
-            logger.warning("key not found: ", error)
-            logger.warning("using default instead")
+
+    @property
+    def current_settings(self):
+        return {setting_name: getattr(self, setting_name) for setting_name in self.saved_settings}
 
     def save_settings(self) -> None:
         """
@@ -112,31 +121,13 @@ class DvlDriver(threading.Thread):
 
         ensure_dir(self.settings_path)
         with open(self.settings_path, "w") as settings:
-            settings.write(
-                json.dumps(
-                    {
-                        "enabled": self.enabled,
-                        "orientation": self.current_orientation,
-                        "hostname": self.hostname,
-                        "rangefinder": self.rangefinder,
-                        "should_send": self.should_send,
-                    }
-                )
-            )
+            settings.write(json.dumps(self.current_settings))
 
     def get_status(self) -> dict:
         """
         Returns a dict with the current status
         """
-        return {
-            "status": self.status,
-            "enabled": self.enabled,
-            "orientation": self.current_orientation,
-            "hostname": self.hostname,
-            "origin": self.origin,
-            "rangefinder": self.rangefinder,
-            "should_send": self.should_send,
-        }
+        return {"status": self.status, **self.current_settings}
 
     @property
     def host(self) -> str:
@@ -187,7 +178,7 @@ class DvlDriver(threading.Thread):
         Sets the DVL orientation, either DVL_FORWARD of DVL_DOWN
         """
         if orientation in [DVL_FORWARD, DVL_DOWN]:
-            self.current_orientation = orientation
+            self.orientation = orientation
             self.save_settings()
             return True
         return False
@@ -396,15 +387,15 @@ class DvlDriver(threading.Thread):
                 current_angle - last_angle
                 for (current_angle, last_angle) in zip(self.current_attitude, self.last_attitude)
             ]
-            if self.current_orientation == DVL_DOWN:
+            if self.orientation == DVL_DOWN:
                 position_delta = [dx, dy, dz]
                 attitude_delta = [dRoll, dPitch, dYaw]
-            elif self.current_orientation == DVL_FORWARD:
+            elif self.orientation == DVL_FORWARD:
                 position_delta = [dz, dy, -dx]
                 attitude_delta = [dYaw, dPitch, -dRoll]
             self.mav.send_vision(position_delta, attitude_delta, dt=data["time"] * 1e3, confidence=confidence)
         elif self.should_send == MessageType.SPEED_ESTIMATE:
-            velocity = [vx, vy, vz] if self.current_orientation == DVL_DOWN else [vz, vy, -vx]  # DVL_FORWARD
+            velocity = [vx, vy, vz] if self.orientation == DVL_DOWN else [vz, vy, -vx]  # DVL_FORWARD
             self.mav.send_vision_speed_estimate(velocity)
 
         self.last_attitude = self.current_attitude
