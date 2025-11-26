@@ -297,6 +297,11 @@ class DvlDriver(threading.Thread):
             self.mav.set_param("EK3_SRC1_POSXY", "MAV_PARAM_TYPE_UINT8", 3)  # GPS
             self.mav.set_param("EK3_SRC1_VELXY", "MAV_PARAM_TYPE_UINT8", 6)  # EXTNAV
             self.mav.set_param("EK3_SRC1_POSZ", "MAV_PARAM_TYPE_UINT8", 1)  # BARO
+            # this tells the EKF that the GPS is a bad source of position
+            self.mav.set_param("EK3_POSNE_M_NSE", "MAV_PARAM_TYPE_FLOAT", 100.0)
+            # these next two tell the EKF that the DVL is as very good source of velocity and position
+            self.mav.set_param("VISO_VEL_M_NSE", "MAV_PARAM_TYPE_FLOAT", 0.001)  # 0.001 m/s
+            self.mav.set_param("VISO_POS_M_NSE", "MAV_PARAM_TYPE_FLOAT", 0.001)  # 0.001 m/s
             return True
         return False
 
