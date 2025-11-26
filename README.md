@@ -2,6 +2,10 @@
 
 ## Changelog
 
+### v1.0.10
+ - Improve DVL finding logic
+ - Refactor settings file
+
 ### v1.0.7
   - Fix using lat/long inputs with no internet
 
