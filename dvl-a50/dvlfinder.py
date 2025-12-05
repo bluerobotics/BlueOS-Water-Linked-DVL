@@ -16,7 +16,6 @@ def check_for_proper_dvl(ip: str) -> bool:
     except Exception as e:
         logger.debug(f"{ip} is not a dvl: {e}")
         return False
-    json.loads(request(url))
 
 
 def get_ips_wildcards(ips: List[str]):
@@ -30,7 +29,10 @@ def find_the_dvl(report_status) -> Optional[str]:
 
     nmap = nmap3.Nmap()
     # generate the scan mask from our current ips
-    networks = json.loads(request("http://host.docker.internal/cable-guy/v1.0/ethernet"))
+    if (response := request("http://host.docker.internal/cable-guy/v1.0/ethernet")) is None:
+        logger.warning("Failed to fetch networks to scan")
+        return None
+    networks = json.loads(response)
     current_networks = [network["addresses"] for network in networks]
     # this looks like [{'ip': '192.168.2.2', 'mode': 'server'}]
     current_ips = []
