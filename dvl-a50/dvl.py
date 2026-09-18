@@ -254,6 +254,11 @@ class DvlDriver(threading.Thread):
                 self.timestamp, positions, attitudes, reset_counter=self.reset_counter
             )
 
+        # ArduPilot applies this only with a valid origin, some aiding, and no GPS/ExtNav
+        # position fuse for the last second. Otherwise it fails and the origin or vision
+        # position send above is what takes effect.
+        self.mav.send_external_position_estimate(lat, lon)
+
     def set_gps_origin(self, lat: float, lon: float) -> None:
         """
         Sets the EKF origin to lat, lon
