@@ -141,6 +141,37 @@ class Mavlink2RestHelper:
 }}
         """
 
+        # ArduPilot only accepts MAV_CMD_EXTERNAL_POSITION_ESTIMATE as a COMMAND_INT, in
+        # MAV_FRAME_GLOBAL and with a NaN altitude. mavlink2rest parses json5, so NaN is valid here.
+        self.external_position_estimate_template = """
+{{
+  "header": {{
+    "system_id": 255,
+    "component_id": 0,
+    "sequence": 0
+  }},
+  "message": {{
+    "type": "COMMAND_INT",
+    "param1": {transmission_time},
+    "param2": 0,
+    "param3": {accuracy},
+    "param4": NaN,
+    "x": {lat},
+    "y": {lon},
+    "z": NaN,
+    "command": {{
+      "type": "MAV_CMD_EXTERNAL_POSITION_ESTIMATE"
+    }},
+    "target_system": {target_system},
+    "target_component": {target_component},
+    "frame": {{
+      "type": "MAV_FRAME_GLOBAL"
+    }},
+    "current": 0,
+    "autocontinue": 0
+  }}
+}}"""
+
         self.rangefinder_template = """
 {{
   "header": {{
@@ -349,6 +380,24 @@ class Mavlink2RestHelper:
             y=position_estimates[1],
             z=position_estimates[2],
             reset_counter=reset_counter,
+        )
+        logger.info(post(MAVLINK2REST_URL + "/mavlink", data=data))
+
+    def send_external_position_estimate(self, lat, lon, accuracy=None):
+        """
+        Sends MAV_CMD_EXTERNAL_POSITION_ESTIMATE to the flight controller, which uses it to
+        reset the EKF position while dead-reckoning.
+
+        param1 is the time this command is sent, in the sender's time domain (unix seconds).
+        accuracy is the one standard deviation accuracy of the position in meters, None if unknown.
+        """
+        data = self.external_position_estimate_template.format(
+            transmission_time=time.time(),
+            accuracy="NaN" if accuracy is None else accuracy,
+            lat=int(lat * 1e7),
+            lon=int(lon * 1e7),
+            target_system=self.vehicle,
+            target_component=self.component,
         )
         logger.info(post(MAVLINK2REST_URL + "/mavlink", data=data))
 
